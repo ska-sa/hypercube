@@ -456,14 +456,13 @@ class HyperCube(object):
             15,extents)
 
 
-    def fmt_array_line(self, name, size, dtype, created, shape):
+    def fmt_array_line(self, name, size, dtype, shape):
         """ Format array parameters on an 80 character width line """
-        return '%-*s%-*s%-*s%-*s%-*s' % (
+        return '%-*s%-*s%-*s%-*s' % (
             20,name,
             10,size,
             15,dtype,
-            8,created,
-            20,shape)
+            35,shape)
 
     def fmt_property_line(self, name, dtype, value, default):
         return '%-*s%-*s%-*s%-*s' % (
@@ -519,14 +518,13 @@ class HyperCube(object):
         """ Generator generating strings describing each registered array """
         yield 'Registered Arrays'
         yield '-'*80
-        yield self.fmt_array_line('Array Name','Size','Type','Created','Shape')
+        yield self.fmt_array_line('Array Name','Size','Type','Shape')
         yield '-'*80
 
         for a in sorted(self._arrays.itervalues(), key=lambda x: x.name.upper()):
             yield self.fmt_array_line(a.name,
                 self.fmt_bytes(self.array_bytes(a)),
                 np.dtype(a.dtype).name,
-                'Y',
                 a.sshape)
 
     def gen_property_descriptions(self):
@@ -571,7 +569,7 @@ class HyperCube(object):
         l.append('-'*80)
         l.append('%-*s: %s' % (18,'Local Memory Usage', self.mem_required()))
         l.append('-'*80)
-        l.append('')
-        l.extend([s for s in self.gen_property_descriptions()])
+        #l.append('')
+        #l.extend([s for s in self.gen_property_descriptions()])
 
         return '\n'.join(l)
