@@ -562,7 +562,9 @@ class HyperCube(object):
             'Local Size', 'Extents')
         yield '-'*80
 
-        for d in sorted(self._dims.itervalues(), key=lambda x: x.name.upper()):
+        for d in sorted(self.dimensions(reify=True).itervalues(),
+            key=lambda x: x.name.upper()):
+        
             yield self.fmt_dimension_line(
                 d.name, d.description, d.global_size, d.local_size, d.extents)
 
