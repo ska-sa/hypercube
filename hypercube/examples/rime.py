@@ -24,15 +24,18 @@ from hypercube import hypercube
 cube = hypercube('hypercube')
 
 # Register time, baseline, channel and polarisation dimensions
-cube.register_dimension('ntime', 1000, description='Number of timesteps')
-cube.register_dimension('nbl', 64*65//2, description='Number of baselines')
-cube.register_dimension('nchan', 32768, description='Number of channels')
-cube.register_dimension('npol', 4, description='Number of polarisations')
-cube.register_dimension('nsrc', 100, description='Number of sources')
+cube.register_dimension('ntime', 1000, description='Timesteps')
+cube.register_dimension('na', 64, description='Antenna')
+cube.register_dimension('nchan', 32768, description='Channels')
+cube.register_dimension('npol', 4, description='Polarisations')
+cube.register_dimension('nsrc', 100, description='Sources')
+# Note these dimension sizes are described in terms of other dimensions
+cube.register_dimension('nbl', 'na*(na-1)//2', description='Baselines')
+cube.register_dimension('nvis', 'ntime*nbl*nchan', description='Visibilities')
 
 # Register visibility and UVW arrays
 cube.register_array('lm', ('nsrc', 2), dtype=np.float32)
-cube.register_array('visibilities', ('ntime', 'nbl', 'nchan', 'npol'), dtype=np.complex128)
+cube.register_array('visibilities', ('nvis', 'npol'), dtype=np.complex128)
 cube.register_array('flag', ('ntime', 'nbl', 'nchan', 'npol'), dtype=np.int32)
 cube.register_array('weight', ('ntime', 'nbl', 'nchan', 'npol'), dtype=np.float64)
 cube.register_array('uvw', ('ntime', 'nbl', 3), dtype=np.complex128)
