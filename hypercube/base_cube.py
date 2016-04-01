@@ -240,14 +240,6 @@ class HyperCube(object):
         return expand_expression_map({ d.name: d.local_size
             for d in self._dims.itervalues()})
 
-    def dim_extent_dict(self):
-        """ Returns a mapping of dimension name to extents """
-        from expressions import expand_expression_map
-
-        extent_l = expand_expression_map({ d.name: d.extents[0]
-            for d in self._dims.itervalues()})
-
-
     def dim_extents(self, *args):
         """
         t_ex, bl_ex, ch_ex = slvr.dim_extents('ntime, 'nbl', 'nchan')
@@ -564,7 +556,7 @@ class HyperCube(object):
 
         for d in sorted(self.dimensions(reify=True).itervalues(),
             key=lambda x: x.name.upper()):
-        
+
             yield self.fmt_dimension_line(
                 d.name, d.description, d.global_size, d.local_size, d.extents)
 
