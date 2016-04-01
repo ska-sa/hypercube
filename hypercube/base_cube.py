@@ -320,7 +320,7 @@ class HyperCube(object):
         for ary in array_list:
             self.register_array(**ary)
 
-    def register_property(self, name, dtype, default, registrant, **kwargs):
+    def register_property(self, name, dtype, default, **kwargs):
         """
         Registers a property with this Solver object
 
@@ -332,8 +332,6 @@ class HyperCube(object):
                 The data-type of this property
             default :
                 Default value for the property.
-            registrant : string
-                Name of the entity registering the property.
 
         Keyword Arguments
         -----------------
@@ -347,8 +345,8 @@ class HyperCube(object):
             raise ValueError(('Property %s is already registered '
                 'on this solver object.') % name)
 
-        P = self._properties[name] = AttrDict(name=name, dtype=dtype,
-            default=default, registrant=registrant)
+        P = self._properties[name] = AttrDict(name=name,
+            dtype=dtype, default=default)
 
         #if not hasattr(HyperCube, name):
         if not HyperCube.__dict__.has_key(name):
