@@ -104,6 +104,43 @@ class Test(unittest.TestCase):
                 'nbl': 'na*(na-1)//2',
                 'nvis': 'ntime*nbl*nchan' })
 
+        # Now set up the above example on the hypercube
+        cube = hypercube.hypercube('hypercube')
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+        cube.register_dimension('nbl', 'na*(na-1)//2')
+        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+
+        # Sanity check our global dimension sizes
+        G = cube.dim_global_size_dict()
+        self.assertTrue(G['nbl'] == nbl)
+        self.assertTrue(G['nvis'] == nvis)
+
+        # Create some local variable sizes
+        local_ntime, local_na, local_nchan = 10, 7, 16
+        local_nbl = local_na*(local_na-1)//2
+        local_nvis = local_ntime*local_nbl*local_nchan
+
+        local_dims = ['ntime', 'na', 'nchan']
+        values = [local_ntime, local_na, local_nchan]
+
+        # Update local size of selected dimensions
+        for arg, ls in zip(local_dims, values):
+            cube.update_dimension(name=arg, local_size=ls,
+                extents=[0,ls], safety=False)
+
+        # Check that local dimension query produces
+        # the corrected derived sizes
+        T = cube.dim_local_size_dict()
+        self.assertTrue(T['nbl'] == local_nbl)
+        self.assertTrue(T['nvis'] == local_nvis)
+
+        # Sanity check our global dimension sizes
+        G = cube.dim_global_size_dict()
+        self.assertTrue(G['nbl'] == nbl)
+        self.assertTrue(G['nvis'] == nvis)
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)
