@@ -186,14 +186,20 @@ class HyperCube(object):
         """
 
         import re
+        from expressions import parse_expression as pe
 
-        # If we got a single string argument
-        if len(args) == 1 and type(args[0]) is str:
+        # If we got a single string argument, try splitting it by separators
+        if len(args) == 1 and isinstance(args[0], str):
+            args = (s.strip() for s in re.split(',|:|;| ', args[0]))
 
-            result = [self._dims[name][attr] for name in
-                [s.strip() for s in re.split(',|:|;| ', args[0])]]
-        else:
-            result = [self._dims[name][attr] for name in args]
+        # Create a variable template from this attribute
+        # for use in parse_expressions below
+        T = { d.name: d[attr] for d in self._dims.itervalues() }
+
+        # Now get the specific attribute for each argument, parsing
+        # any string expressions on the way
+        result = [pe(self._dims[name][attr], variables=T, expand=True)
+            for name in args]
 
         # Return single element if length one else entire list
         return result[0] if len(result) == 1 else result
@@ -209,10 +215,6 @@ class HyperCube(object):
 
         return self.__dim_attribute(DIMDATA.GLOBAL_SIZE, *args)
 
-    def dim_global_size_dict(self):
-        """ Returns a mapping of dimension name to global size """
-        return { d.name: d.global_size for d in self._dims.itervalues() }
-
     def dim_local_size(self, *args):
         """
         ntime, nbl, nchan = slvr.dim_local_size('ntime, 'nbl', 'nchan')
@@ -224,9 +226,27 @@ class HyperCube(object):
 
         return self.__dim_attribute(DIMDATA.LOCAL_SIZE, *args)
 
+    def dim_global_size_dict(self):
+        """ Returns a mapping of dimension name to global size """
+        from expressions import expand_expression_map
+
+        return expand_expression_map({ d.name: d.global_size
+            for d in self._dims.itervalues()})
+
     def dim_local_size_dict(self):
         """ Returns a mapping of dimension name to local size """
-        return { d.name: d.local_size for d in self._dims.itervalues() }
+        from expressions import expand_expression_map
+
+        return expand_expression_map({ d.name: d.local_size
+            for d in self._dims.itervalues()})
+
+    def dim_extent_dict(self):
+        """ Returns a mapping of dimension name to extents """
+        from expressions import expand_expression_map
+
+        extent_l = expand_expression_map({ d.name: d.extents[0]
+            for d in self._dims.itervalues()})
+
 
     def dim_extents(self, *args):
         """
@@ -421,9 +441,43 @@ class HyperCube(object):
             raise KeyError("Array '{n}' is not registered "
                 "on this solver".format(n=name))
 
-    def dimensions(self):
-        """ Return a dictionary of dimensions """
-        return self._dims
+    def dimensions(self, reify=False):
+        """
+        Return a dictionary of dimensions
+
+        Keyword Arguments
+        -----------------
+            reify : boolean
+                if True, converts any expressions in the dimension
+                information to integers.
+
+        """
+
+        def reify_dims(dims, copy=True):
+            from expressions import parse_expression
+
+            dims = { k : d.copy() for k, d in dims.iteritems() } if copy else dims 
+            G = { d.name: d.global_size for d in dims.itervalues() }
+            L = { d.name: d.local_size for d in dims.itervalues() }
+            E0 = { d.name: d.extents[0] for d in dims.itervalues() }
+            E1 = { d.name: d.extents[1] for d in dims.itervalues() }
+
+            for n, d in dims.iteritems():
+                d[DIMDATA.GLOBAL_SIZE] = parse_expression(d[DIMDATA.GLOBAL_SIZE],
+                    variables=G, expand=True)
+                d[DIMDATA.LOCAL_SIZE] = parse_expression(d[DIMDATA.LOCAL_SIZE],
+                    variables=L, expand=True)
+                d[DIMDATA.EXTENTS][0] = parse_expression(d[DIMDATA.EXTENTS][0],
+                    variables=E0, expand=True)
+                d[DIMDATA.EXTENTS][1] = parse_expression(d[DIMDATA.EXTENTS][1],
+                    variables=E1, expand=True)
+
+                # Force a check of the dimension constraints at this point
+                d.check()
+
+            return dims
+
+        return reify_dims(self._dims) if reify else self._dims
 
     def dimension(self, name):
         """ Returns a dimension """
