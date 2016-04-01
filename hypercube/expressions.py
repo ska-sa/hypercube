@@ -116,7 +116,9 @@ class HCNodeVisitor(ast.NodeVisitor):
 
 def parse_expression(expr, variables=None, expand=False):
     """
-    Parses expr, using substituting variables values provided
+    Parses expr, using substituting variables values provided.
+    If expand is True, any expression values in variables will
+    be replaced with their actual results.
 
     parse_expression('nvis', variables={
                 'ntime' : 100,
@@ -132,12 +134,9 @@ def parse_expression(expr, variables=None, expand=False):
     return HCNodeVisitor(variables).visit(ast.parse(expr))
 
 def expand_expression_map(dictionary):
+    """ Expand variables in the supplied directory, in-place """
     for k, v in dictionary.iteritems():
-        if not isinstance(v, str):
-            continue
-
         dictionary[k] = parse_expression(v,
-            variables=dictionary,
-            expand=True)
+            variables=dictionary, expand=True)
 
     return dictionary
