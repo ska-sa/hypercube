@@ -22,6 +22,7 @@ from hypercube.base_cube import HyperCube
 from hypercube.numpy_cube import NumpyHyperCube
 from hypercube.cuda_cube import CUDAHyperCube
 
+from hypercube.version import __version__
 from hypercube.tests import test
 
 def hypercube(cube_type, **kwargs):
