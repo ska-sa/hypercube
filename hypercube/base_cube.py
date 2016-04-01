@@ -135,7 +135,7 @@ class HyperCube(object):
             ])
         """
         for dim_data in dim_list:
-            self.update_dimension(dim_data)
+            self.update_dimension(**dim_data)
 
 
     def update_dimension(self, **update_dict):
