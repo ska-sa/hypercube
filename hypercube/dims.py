@@ -50,7 +50,7 @@ class Dimension(AttrDict):
             name : str
                 Name of the dimension
             dim_data : integer or another Dimension
-                If integer a fresh dictionary will be created, otherwise
+                If integer a fresh Dimension will be created, otherwise
                 dim_data will be copied.
 
         Keyword Arguments
@@ -61,7 +61,7 @@ class Dimension(AttrDict):
         super(Dimension, self).__init__()
 
         # If dim_data is an integer, start constructing a dictionary from it
-        if isinstance(dim_data, (int, long, np.integer)):
+        if isinstance(dim_data, (int, long, np.integer, str)):
             self[DIMDATA.NAME] = name
             self[DIMDATA.GLOBAL_SIZE] = dim_data
             self[DIMDATA.LOCAL_SIZE] = dim_data
@@ -143,8 +143,19 @@ class Dimension(AttrDict):
         # Check that we've been given valid values
         self.check()
 
+    def is_expression(self):
+        return (isinstance(self[DIMDATA.GLOBAL_SIZE], str) or
+            isinstance(self[DIMDATA.LOCAL_SIZE], str) or
+            isinstance(self[DIMDATA.EXTENTS][0], str) or 
+            isinstance(self[DIMDATA.EXTENTS][1], str))
+
     def check(self):
         """ Sanity check the contents of a dimension data dictionary """
+
+        # Currently, we don't check string expressions
+        if self.is_expression():
+            return
+
         ls, gs, E, name, zeros = (self[DIMDATA.LOCAL_SIZE],
             self[DIMDATA.GLOBAL_SIZE],
             self[DIMDATA.EXTENTS],
