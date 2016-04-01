@@ -45,8 +45,9 @@ operators = {
 }
 
 class HCNodeVisitor(ast.NodeVisitor):
-    def __init__(self, variables=None):
+    def __init__(self, variables=None, expand=False):
         self.vars = {} if variables is None else variables
+        self.expand = expand
 
     def visit_Module(self, node):
         res = [self.visit(n) for n in node.body]
@@ -100,15 +101,23 @@ class HCNodeVisitor(ast.NodeVisitor):
         # TODO: extract above variable from dict in loop to optimise edge
         # case where variable value is just another variable. Infinite loops?
         if isinstance(value, str):
-            return HCNodeVisitor(self.vars).visit(ast.parse(value))
-        else:
-            return value
+            result = (HCNodeVisitor(variables=self.vars, expand=self.expand)
+                .visit(ast.parse(value)))
+
+            return result
+
+        if self.expand:
+            self.vars[node.id] = value
+
+        return value
 
     def generic_visit(self, node):
         raise SyntaxError('Unhandled node of type %s' % type(node))
 
-def parse_expression(expr, variables=None):
+def parse_expression(expr, variables=None, expand=False):
     """
+    Parses expr, using substituting variables values provided
+
     parse_expression('nvis', variables={
                 'ntime' : 100,
                 'na' : 16,
@@ -117,5 +126,18 @@ def parse_expression(expr, variables=None):
                 'nvis': 'ntime*nbl*nchan',
             })
     """
+    if not isinstance(expr, str):
+        return expr
 
     return HCNodeVisitor(variables).visit(ast.parse(expr))
+
+def expand_expression_map(dictionary):
+    for k, v in dictionary.iteritems():
+        if not isinstance(v, str):
+            continue
+
+        dictionary[k] = parse_expression(v,
+            variables=dictionary,
+            expand=True)
+
+    return dictionary
