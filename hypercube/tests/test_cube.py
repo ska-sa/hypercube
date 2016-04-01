@@ -21,6 +21,8 @@
 import unittest
 import sys
 
+import hypercube
+
 class Test(unittest.TestCase):
     """
     """
@@ -32,6 +34,59 @@ class Test(unittest.TestCase):
     def tearDown(self):
         """ Tear down each test case """
         pass
+
+    def test_dim_queries(self):
+            # Set up our problem size
+        ntime, na, nchan = 100, 64, 128
+        nbl = na*(na-1)//2
+        nvis = ntime*nbl*nchan
+
+        # Create a cube and register some dimensions
+        cube = hypercube.hypercube('hypercube')
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+        cube.register_dimension('nbl', nbl)
+        cube.register_dimension('nvis', nvis)
+
+        args = ['ntime','na','nbl','nchan','nvis']
+
+        # Test that the mutiple argument form works
+        _ntime, _na, _nbl, _nchan, _nvis = cube.dim_global_size(*args)
+
+        self.assertTrue(_ntime == ntime)
+        self.assertTrue(_nbl == nbl)
+        self.assertTrue(_na == na)
+        self.assertTrue(_nchan == nchan)
+        self.assertTrue(_nvis == nvis)
+
+        # Test that the multiple arguments packed into a string form works
+        _ntime, _na, _nbl, _nchan, _nvis = cube.dim_global_size(','.join(args))
+
+        self.assertTrue(_ntime == ntime)
+        self.assertTrue(_nbl == nbl)
+        self.assertTrue(_na == na)
+        self.assertTrue(_nchan == nchan)
+        self.assertTrue(_nvis == nvis)
+
+        local_ntime, local_na, local_nchan = 10, 7, 16
+        local_nbl = local_na*(local_na-1)//2
+        local_nvis = local_ntime*local_nbl*local_nchan
+
+        values = [local_ntime, local_na, local_nbl, local_nchan, local_nvis]
+
+        for arg, ls in zip(args, values):
+            cube.update_dimension(name=arg, local_size=ls,
+                extents=[0,ls], safety=False)
+
+        # Test that the mutiple argument form works
+        _ntime, _na, _nbl, _nchan, _nvis = cube.dim_local_size(*args)
+
+        self.assertTrue(_ntime == local_ntime)
+        self.assertTrue(_nbl == local_nbl)
+        self.assertTrue(_na == local_na)
+        self.assertTrue(_nchan == local_nchan)
+        self.assertTrue(_nvis == local_nvis)
 
     def test_parse_expression(self):
         """ Test expression parsing """
