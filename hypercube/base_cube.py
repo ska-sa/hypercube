@@ -350,10 +350,10 @@ class HyperCube(object):
         P = self._properties[name] = AttrDict(name=name, dtype=dtype,
             default=default, registrant=registrant)
 
-        #if not hasattr(BaseSolver, name):
-        if not BaseSolver.__dict__.has_key(name):
+        #if not hasattr(HyperCube, name):
+        if not HyperCube.__dict__.has_key(name):
                 # Create the descriptor for this property on the class instance
-            setattr(BaseSolver, name, PropertyDescriptor(record_key=name, default=default))
+            setattr(HyperCube, name, PropertyDescriptor(record_key=name, default=default))
 
         # Set the descriptor on this object instance
         setattr(self, name, default)
