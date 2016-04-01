@@ -18,17 +18,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-from hypercube.base_cube import HyperCube
-from hypercube.numpy_cube import NumpyHyperCube
-from hypercube.cuda_cube import CUDAHyperCube
+import logging
+import unittest
+import numpy as np
+import time
+import sys
 
-from hypercube.tests import test
+class Test(unittest.TestCase):
+    """
+    """
 
-def hypercube(cube_type, **kwargs):
-    if cube_type == 'hypercube':
-        return HyperCube()
-    elif cube_type == 'numpy_cube':
-        return NumpyHyperCube()
-    elif cube_type == 'cuda_cube':
-        import pycuda.autoinit
-        return CUDAHyperCube(context=pycuda.autoinit.context)
+    def setUp(self):
+        """ Set up each test case """
+        np.random.seed(int(time.time()) & 0xFFFFFFFF)
+
+    def tearDown(self):
+        """ Tear down each test case """
+        pass
+
+if __name__ == '__main__':
+    suite = unittest.TestLoader().loadTestsFromTestCase(Test)
+    unittest.TextTestRunner(verbosity=2).run(suite)
