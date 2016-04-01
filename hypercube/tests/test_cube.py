@@ -18,10 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import unittest
-import numpy as np
-import time
 import sys
 
 class Test(unittest.TestCase):
@@ -30,11 +27,27 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         """ Set up each test case """
-        np.random.seed(int(time.time()) & 0xFFFFFFFF)
+        pass
 
     def tearDown(self):
         """ Tear down each test case """
         pass
+
+    def test_parse_expression(self):
+        """ Test expression parsing """
+        from hypercube.expressions import parse_expression
+
+        # Set up our problem size
+        ntime, na, nchan = 100, 64, 128
+        nbl = na*(na-1)//2
+        nvis = ntime*nbl*nchan
+
+        # Check that the parser expression produces a results
+        # that agrees with our manual calculation
+        assert nvis == parse_expression('nvis',
+            variables={ 'ntime' : ntime, 'na' : na, 'nchan': nchan,
+                'nbl': 'na*(na-1)//2',
+                'nvis': 'ntime*nbl*nchan' })
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
