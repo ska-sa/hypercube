@@ -132,9 +132,9 @@ class Test(unittest.TestCase):
 
         # Check that local dimension query produces
         # the corrected derived sizes
-        T = cube.dim_local_size_dict()
-        self.assertTrue(T['nbl'] == local_nbl)
-        self.assertTrue(T['nvis'] == local_nvis)
+        L = cube.dim_local_size_dict()
+        self.assertTrue(L['nbl'] == local_nbl)
+        self.assertTrue(L['nvis'] == local_nvis)
 
         # Sanity check our global dimension sizes
         G = cube.dim_global_size_dict()
