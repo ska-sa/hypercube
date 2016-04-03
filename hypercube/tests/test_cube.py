@@ -141,6 +141,23 @@ class Test(unittest.TestCase):
         self.assertTrue(G['nbl'] == nbl)
         self.assertTrue(G['nvis'] == nvis)
 
+
+    def test_parse_expression_fail(self):
+        """ Test expression parsing failure """
+        from hypercube.expressions import parse_expression
+
+        # Check that a missing nchan in nvis produces an exception
+        with self.assertRaises(ValueError) as cm:
+            parse_expression('nvis',
+                variables={ 'ntime': 10, 'nbl': 21,
+                    'nvis': 'ntime*nbl*nchan' })
+
+            self.assertTrue("Unable to evaluate "
+                "expression 'ntime*nbl*nchan'" in str(cm.exception))
+
+            self.assertTrue("as variable 'nchan' was not"
+                " in the variable dictionary.")
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)

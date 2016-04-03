@@ -21,6 +21,7 @@
 # Based on http://stackoverflow.com/a/9558001
 
 import ast
+import json
 import itertools
 import operator as op
 
@@ -44,10 +45,14 @@ operators = {
     ast.GtE: op.ge
 }
 
-class HCNodeVisitor(ast.NodeVisitor):
-    def __init__(self, variables=None, expand=False):
+class _ExprParser(ast.NodeVisitor):
+    def __init__(self, expression, variables=None, expand=False):
+        self.expression = expression
         self.vars = {} if variables is None else variables
         self.expand = expand
+
+    def parse(self):
+        return self.visit(ast.parse(self.expression))
 
     def visit_Module(self, node):
         res = [self.visit(n) for n in node.body]
@@ -93,16 +98,17 @@ class HCNodeVisitor(ast.NodeVisitor):
         value = self.vars.get(node.id, None)
 
         if value is None:
-            raise ValueError(
-                ("Cannot find a matching variable for "
-                 "parse tree name '{n}'").format(node.id))
+            raise ValueError("Unable to evaluate expression '{e}', "
+                "as variable '{n}' was not in the variable dictionary. "
+                "Contents: {v}".format(
+                    n=node.id, e=self.expression,v=json.dumps(self.vars, indent=2)))
 
         # We got a string (another expression) from the dictionary. Parse.
         # TODO: extract above variable from dict in loop to optimise edge
         # case where variable value is just another variable. Infinite loops?
         if isinstance(value, str):
-            result = (HCNodeVisitor(variables=self.vars, expand=self.expand)
-                .visit(ast.parse(value)))
+            result = _ExprParser(value, variables=self.vars,
+                expand=self.expand).parse()
 
             return result
 
@@ -131,7 +137,8 @@ def parse_expression(expr, variables=None, expand=False):
     if not isinstance(expr, str):
         return expr
 
-    return HCNodeVisitor(variables).visit(ast.parse(expr))
+    return _ExprParser(expr, variables=variables,
+                expand=expand).parse()
 
 def expand_expression_map(dictionary):
     """ Expand variables in the supplied directory, in-place """
