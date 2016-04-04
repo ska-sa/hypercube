@@ -25,7 +25,7 @@ from weakref import WeakKeyDictionary
 from attrdict import AttrDict
 from collections import OrderedDict
 
-from hypercube.dims import DIMDATA, create_dim_data
+from hypercube.dims import DimData, create_dim_data
 
 class PropertyDescriptor(object):
     """ Descriptor class for properties """
@@ -146,7 +146,7 @@ class HyperCube(object):
         ---------
             update_dict : dict
         """
-        name = update_dict.get(DIMDATA.NAME, None)
+        name = update_dict.get(DimData.NAME, None)
 
         if not name:
             raise AttributeError("A dimension name is required to update "
@@ -165,7 +165,7 @@ class HyperCube(object):
 
         dim.update(update_dict)
 
-        if DIMDATA.LOCAL_SIZE in update_dict:
+        if DimData.LOCAL_SIZE in update_dict:
             # Update local array shapes
             T = self.dim_local_size_dict()
 
@@ -213,7 +213,7 @@ class HyperCube(object):
         ntime, nbl, nchan, nsrc = slvr.dim_global_size('ntime,nbl:nchan nsrc')
         """
 
-        return self.__dim_attribute(DIMDATA.GLOBAL_SIZE, *args)
+        return self.__dim_attribute(DimData.GLOBAL_SIZE, *args)
 
     def dim_local_size(self, *args):
         """
@@ -224,7 +224,7 @@ class HyperCube(object):
         ntime, nbl, nchan, nsrc = slvr.dim_local_size('ntime,nbl:nchan nsrc')
         """
 
-        return self.__dim_attribute(DIMDATA.LOCAL_SIZE, *args)
+        return self.__dim_attribute(DimData.LOCAL_SIZE, *args)
 
     def dim_global_size_dict(self):
         """ Returns a mapping of dimension name to global size """
@@ -249,7 +249,7 @@ class HyperCube(object):
         t_ex, bl_ex, ch_ex, src_ex = slvr.dim_extents('ntime,nbl:nchan nsrc')
         """
 
-        return self.__dim_attribute(DIMDATA.EXTENTS, *args)
+        return self.__dim_attribute(DimData.EXTENTS, *args)
 
     def dim_extents_dict(self):
         """ Returns a mapping of dimension name to extents """
@@ -455,13 +455,13 @@ class HyperCube(object):
             E1 = { d.name: d.extents[1] for d in dims.itervalues() }
 
             for n, d in dims.iteritems():
-                d[DIMDATA.GLOBAL_SIZE] = parse_expression(d[DIMDATA.GLOBAL_SIZE],
+                d[DimData.GLOBAL_SIZE] = parse_expression(d[DimData.GLOBAL_SIZE],
                     variables=G, expand=True)
-                d[DIMDATA.LOCAL_SIZE] = parse_expression(d[DIMDATA.LOCAL_SIZE],
+                d[DimData.LOCAL_SIZE] = parse_expression(d[DimData.LOCAL_SIZE],
                     variables=L, expand=True)
-                d[DIMDATA.EXTENTS][0] = parse_expression(d[DIMDATA.EXTENTS][0],
+                d[DimData.EXTENTS][0] = parse_expression(d[DimData.EXTENTS][0],
                     variables=E0, expand=True)
-                d[DIMDATA.EXTENTS][1] = parse_expression(d[DIMDATA.EXTENTS][1],
+                d[DimData.EXTENTS][1] = parse_expression(d[DimData.EXTENTS][1],
                     variables=E1, expand=True)
 
                 # Force a check of the dimension constraints at this point

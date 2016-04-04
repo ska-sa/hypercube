@@ -23,7 +23,7 @@ import numpy as np
 
 DEFAULT_DESCRIPTION = 'The FOURTH dimension!'
 
-class DIMDATA(object):
+class DimData(object):
     NAME = 'name'
     DESCRIPTION = 'description'
     GLOBAL_SIZE = 'global_size'
@@ -31,9 +31,6 @@ class DIMDATA(object):
     EXTENTS = 'extents'
     SAFETY = 'safety'
     ZERO_VALID = 'zero_valid'
-
-    ALL = frozenset([NAME, DESCRIPTION, GLOBAL_SIZE, LOCAL_SIZE,
-        EXTENTS, SAFETY, ZERO_VALID])
 
 def create_dim_data(name, dim_data, **kwargs):
     return Dimension(name, dim_data, **kwargs)
@@ -62,31 +59,31 @@ class Dimension(AttrDict):
 
         # If dim_data is an integer, start constructing a dictionary from it
         if isinstance(dim_data, (int, long, np.integer, str)):
-            self[DIMDATA.NAME] = name
-            self[DIMDATA.GLOBAL_SIZE] = dim_data
-            self[DIMDATA.LOCAL_SIZE] = dim_data
-            self[DIMDATA.EXTENTS] = [0, dim_data]
-            self[DIMDATA.DESCRIPTION] = DEFAULT_DESCRIPTION
-            self[DIMDATA.SAFETY] = True
-            self[DIMDATA.ZERO_VALID] = False
+            self[DimData.NAME] = name
+            self[DimData.GLOBAL_SIZE] = dim_data
+            self[DimData.LOCAL_SIZE] = dim_data
+            self[DimData.EXTENTS] = [0, dim_data]
+            self[DimData.DESCRIPTION] = DEFAULT_DESCRIPTION
+            self[DimData.SAFETY] = True
+            self[DimData.ZERO_VALID] = False
         # Otherwise directly copy the entries
         elif isinstance(dim_data, Dimension):
             for k, v in dim_data.iteritems():
                 self[k] = v
-            self[DIMDATA.NAME] = name
+            self[DimData.NAME] = name
         else:
             raise TypeError(("dim_data must be an integer or a Dimension. "
                 "Received a {t} instead.").format(t=type(dim_data)))
 
         # Intersect the keyword arguments with dictionary values
-        kwargs = {k: kwargs[k] for k in kwargs.iterkeys() if k in DIMDATA.ALL}
+        kwargs = {k: kwargs[k] for k in kwargs.iterkeys() if k in DimData.ALL}
 
         # Now update the dimension data from any keyword arguments
         self.update(kwargs)
 
     def copy(self):
         """ Defer to the constructor for copy operations """
-        return Dimension(self[DIMDATA.NAME], self)
+        return Dimension(self[DimData.NAME], self)
 
     def update(self, other=None, **kwargs):
         """
@@ -102,52 +99,52 @@ class Dimension(AttrDict):
             for k, v in other.iteritems() if isinstance(other, Mapping) else other:
                 kwargs[k] = v
 
-        if DIMDATA.NAME in kwargs:
-            self[DIMDATA.NAME] = kwargs[DIMDATA.NAME]
+        if DimData.NAME in kwargs:
+            self[DimData.NAME] = kwargs[DimData.NAME]
 
-        name = self[DIMDATA.NAME]
+        name = self[DimData.NAME]
 
-        if DIMDATA.DESCRIPTION in kwargs:
-            self[DIMDATA.DESCRIPTION] = kwargs[DIMDATA.DESCRIPTION]
+        if DimData.DESCRIPTION in kwargs:
+            self[DimData.DESCRIPTION] = kwargs[DimData.DESCRIPTION]
 
         # Update options if present
-        if DIMDATA.SAFETY in kwargs:
-            self[DIMDATA.SAFETY] = kwargs[DIMDATA.SAFETY]
+        if DimData.SAFETY in kwargs:
+            self[DimData.SAFETY] = kwargs[DimData.SAFETY]
 
-        if DIMDATA.ZERO_VALID in kwargs:
-            self[DIMDATA.ZERO_VALID] = kwargs[DIMDATA.ZERO_VALID]
+        if DimData.ZERO_VALID in kwargs:
+            self[DimData.ZERO_VALID] = kwargs[DimData.ZERO_VALID]
 
-        if DIMDATA.LOCAL_SIZE in kwargs:
-            if self[DIMDATA.SAFETY] is True:
+        if DimData.LOCAL_SIZE in kwargs:
+            if self[DimData.SAFETY] is True:
                 raise ValueError(("Modifying local size of dimension '{d}' "
                     "is not allowed by default. If you are sure you want "
                     "to do this add a '{s}' : 'False' entry to the "
-                    "update dictionary.").format(d=name, s=DIMDATA.SAFETY))
+                    "update dictionary.").format(d=name, s=DimData.SAFETY))
 
-            if self[DIMDATA.ZERO_VALID] is False and kwargs[DIMDATA.LOCAL_SIZE] == 0:
+            if self[DimData.ZERO_VALID] is False and kwargs[DimData.LOCAL_SIZE] == 0:
                 raise ValueError(("Modifying local size of dimension '{d}' "
                     "to zero is not valid. If you are sure you want "
                     "to do this add a '{s}' : 'True' entry to the "
-                    "update dictionary.").format(d=name, s=DIMDATA.ZERO_VALID))
+                    "update dictionary.").format(d=name, s=DimData.ZERO_VALID))
 
-            self[DIMDATA.LOCAL_SIZE] = kwargs[DIMDATA.LOCAL_SIZE]
+            self[DimData.LOCAL_SIZE] = kwargs[DimData.LOCAL_SIZE]
 
-        if DIMDATA.EXTENTS in kwargs:
-            exts = kwargs[DIMDATA.EXTENTS]
+        if DimData.EXTENTS in kwargs:
+            exts = kwargs[DimData.EXTENTS]
             if (not isinstance(exts, Sequence) or len(exts) != 2):
                 raise TypeError("'{e}' entry must be a "
-                    "sequence of length 2.".format(e=DIMDATA.EXTENTS))
+                    "sequence of length 2.".format(e=DimData.EXTENTS))
 
-            self[DIMDATA.EXTENTS] = [v for v in exts[0:2]]
+            self[DimData.EXTENTS] = [v for v in exts[0:2]]
 
         # Check that we've been given valid values
         self.check()
 
     def is_expression(self):
-        return (isinstance(self[DIMDATA.GLOBAL_SIZE], str) or
-            isinstance(self[DIMDATA.LOCAL_SIZE], str) or
-            isinstance(self[DIMDATA.EXTENTS][0], str) or 
-            isinstance(self[DIMDATA.EXTENTS][1], str))
+        return (isinstance(self[DimData.GLOBAL_SIZE], str) or
+            isinstance(self[DimData.LOCAL_SIZE], str) or
+            isinstance(self[DimData.EXTENTS][0], str) or 
+            isinstance(self[DimData.EXTENTS][1], str))
 
     def check(self):
         """ Sanity check the contents of a dimension data dictionary """
@@ -156,11 +153,11 @@ class Dimension(AttrDict):
         if self.is_expression():
             return
 
-        ls, gs, E, name, zeros = (self[DIMDATA.LOCAL_SIZE],
-            self[DIMDATA.GLOBAL_SIZE],
-            self[DIMDATA.EXTENTS],
-            self[DIMDATA.NAME],
-            self[DIMDATA.ZERO_VALID])
+        ls, gs, E, name, zeros = (self[DimData.LOCAL_SIZE],
+            self[DimData.GLOBAL_SIZE],
+            self[DimData.EXTENTS],
+            self[DimData.NAME],
+            self[DimData.ZERO_VALID])
 
         # Sanity check dimensions
         assert 0 <= ls <= gs, \
