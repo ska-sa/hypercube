@@ -32,6 +32,9 @@ class DimData(object):
     SAFETY = 'safety'
     ZERO_VALID = 'zero_valid'
 
+    ALL = frozenset([NAME, DESCRIPTION, GLOBAL_SIZE, LOCAL_SIZE,
+        EXTENTS, SAFETY, ZERO_VALID])
+
 def create_dim_data(name, dim_data, **kwargs):
     return Dimension(name, dim_data, **kwargs)
 
