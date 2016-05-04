@@ -24,6 +24,7 @@ import sys
 
 import numpy as np
 from hypercube import hypercube
+import hypercube.util as hcu
 
 cube = hypercube('hypercube')
 
@@ -87,7 +88,7 @@ assert np_cube.main_grid.shape == (grid_width, grid_height, nchan, npol)
 # Do some Numpy-like things on channel 1
 np_cube.main_grid[:,:,1] = 1 - 1*1j
 
-print(np_cube.fmt_bytes(np_cube.main_grid.nbytes))
+print(hcu.fmt_bytes(np_cube.main_grid.nbytes))
 
 try:
     # Create a cuda hypercube, which will actually create

@@ -27,6 +27,8 @@ from collections import OrderedDict
 
 from hypercube.dims import DimData, create_dim_data
 
+import hypercube.util as hcu
+
 class PropertyDescriptor(object):
     """ Descriptor class for properties """
     def __init__(self, record_key, default=None, ):
@@ -60,24 +62,12 @@ class HyperCube(object):
 
     def bytes_required(self):
         """ Returns the memory required by all arrays in bytes."""
-        return np.sum([self.array_bytes(a) for a in self._arrays.itervalues()])
+        return np.sum([hcu.array_bytes(a) for a in self._arrays.itervalues()])
 
-    def array_bytes(self, array):
-        """ Estimates the memory of the supplied array in bytes """
-        return np.product(array.shape)*np.dtype(array.dtype).itemsize
-
-    def fmt_bytes(self, nbytes):
-        """ Returns a human readable string, given the number of bytes """
-        for x in ['B','KB','MB','GB', 'TB']:
-            if nbytes < 1024.0:
-                return "%3.1f%s" % (nbytes, x)
-            nbytes /= 1024.0
-
-        return "%.1f%s" % (nbytes, 'PB')
 
     def mem_required(self):
         """ Return a string representation of the total memory required """
-        return self.fmt_bytes(self.bytes_required())
+        return hcu.fmt_bytes(self.bytes_required())
 
     def register_dimension(self, name, dim_data, **kwargs):
         """
@@ -303,12 +293,12 @@ class HyperCube(object):
 
         # Set up a member describing the shape
         if kwargs.get('shape_member', False) is True:
-            shape_name = self.shape_name(name)
+            shape_name = hcu.shape_name(name)
             setattr(self, shape_name, shape)
 
         # Set up a member describing the dtype
         if kwargs.get('dtype_member', False) is True:
-            dtype_name = self.dtype_name(name)
+            dtype_name = hcu.dtype_name(name)
             setattr(self, dtype_name, dtype)
 
         # OK, create a record for this array
@@ -370,7 +360,7 @@ class HyperCube(object):
 
         # Should we create a setter for this property?
         setter = kwargs.get('setter_method', True)
-        setter_name = self.setter_name(name)
+        setter_name = hcu.setter_name(name)
 
         # Yes, create a default setter
         if isinstance(setter, types.BooleanType) and setter is True:
@@ -479,18 +469,6 @@ class HyperCube(object):
             raise KeyError("Array '{n}' is not registered "
                 "on this solver".format(n=name))
 
-    def shape_name(self, name):
-        """ Constructs a name for the array shape member, based on the array name """
-        return name + '_shape'
-
-    def dtype_name(self, name):
-        """ Constructs a name for the array data-type member, based on the array name """
-        return name + '_dtype'
-
-    def setter_name(self, name):
-        """ Constructs a name for the property, based on the property name """
-        return 'set_' + name
-
     def fmt_dimension_line(self, name, description, global_size, local_size, extents):
         return '%-*s%-*s%-*s%-*s%-*s' % (
             15,name,
@@ -569,7 +547,7 @@ class HyperCube(object):
 
         for a in sorted(self._arrays.itervalues(), key=lambda x: x.name.upper()):
             yield self.fmt_array_line(a.name,
-                self.fmt_bytes(self.array_bytes(a)),
+                hcu.fmt_bytes(hcu.array_bytes(a)),
                 np.dtype(a.dtype).name,
                 a.sshape)
 
