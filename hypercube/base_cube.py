@@ -113,7 +113,7 @@ class HyperCube(object):
 
         return D
 
-    def register_dimensions(self, dim_list, defaults=True):
+    def register_dimensions(self, dim_list):
         """
         >>> slvr.register_dimensions([
             {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
