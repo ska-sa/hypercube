@@ -88,6 +88,28 @@ class Test(unittest.TestCase):
         self.assertTrue(dims['nvis'].extents[0] == 0)
         self.assertTrue(dims['nvis'].extents == (0, local_nvis))
 
+        # Test individual dimension retrieval
+        dim = cube.dimension('nvis')
+        self.assertTrue(dim.global_size == 'ntime*nbl*nchan')
+        self.assertTrue(dim.local_size == 'ntime*nbl*nchan')
+        self.assertTrue(dim.extents[0] == 0)
+        self.assertTrue(dim.extents == (0, 'ntime*nbl*nchan'))
+
+        # Test individual dimension reification
+        dim = cube.dimension('nvis', reify=True)
+        self.assertTrue(dim.global_size == nvis)
+        self.assertTrue(dim.local_size == local_nvis)
+        self.assertTrue(dim.extents[0] == 0)
+        self.assertTrue(dim.extents == (0, local_nvis))
+
+        # Test that we still have an abstract dimensions when
+        # no reification is requested
+        dims = cube.dimensions()
+        self.assertTrue(dims['nvis'].global_size == 'ntime*nbl*nchan')
+        self.assertTrue(dims['nvis'].local_size == 'ntime*nbl*nchan')
+        self.assertTrue(dims['nvis'].extents == (0, 'ntime*nbl*nchan'))
+
+
     def test_array_registration_and_reification(self):
         """ Test array registration and reification """
         # Set up our problem size
@@ -128,6 +150,18 @@ class Test(unittest.TestCase):
         concrete_shape = (local_ntime, na*(na-1)//2, nchan, npol)
         self.assertTrue(arrays[VIS].shape == concrete_shape)
 
+        # Test individual array retrieval
+        array = cube.array(VIS)
+        self.assertTrue(array.shape == abstract_shape)
+
+        # Test individual array reification
+        array = cube.array(VIS, reify=True)
+        self.assertTrue(array.shape == concrete_shape)
+
+        # Test that we still have an abstract shape when
+        # no reification is requested
+        arrays = cube.arrays()
+        self.assertTrue(arrays[VIS].shape == abstract_shape)
 
     def test_dim_queries(self):
         # Set up our problem size

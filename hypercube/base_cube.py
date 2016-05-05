@@ -443,13 +443,24 @@ class HyperCube(object):
         return (reify_arrays(self._arrays, self.dimensions(reify=True))
             if reify else self._arrays)
 
-    def array(self, name):
-        """ Returns an array """
-        try:
+    def array(self, name, reify=False):
+        """
+        Returns an array object.
+
+        Reifying arrays "individually" is expensive since, in practice,
+        all dimensions must be reified to handle dependent expressions.
+        """
+
+        # Complain if the array doesn't exist
+        if name not in self._arrays:
+            raise KeyError("Array '{n}' is not registered on this solver"
+                .format(n=name))
+
+        # Just return the array if we're not reifying
+        if not reify:
             return self._arrays[name]
-        except KeyError:
-            raise KeyError("Array '{n}' is not registered "
-                "on this solver".format(n=name))
+
+        return reify_arrays({name : self._arrays[name]}, self.dimensions(reify=True))[name]
 
     def dimensions(self, reify=False):
         """
@@ -466,13 +477,24 @@ class HyperCube(object):
 
         return reify_dims(self._dims) if reify else self._dims
 
-    def dimension(self, name):
-        """ Returns a dimension """
-        try:
+    def dimension(self, name, reify=False):
+        """
+        Returns a dimension object.
+
+        Reifying dimensions "individually" is expensive since, in practice,
+        all dimensions must be reified to handle dependent expressions.
+        """
+        # Complain if the array doesn't exist
+        if name not in self._dims:
+            raise KeyError("Dimension '{n}' is not registered on this solver"
+                .format(n=name))
+
+        # Just return the array if we're not reifying
+        if not reify:
             return self._dims[name]
-        except KeyError:
-            raise KeyError("Array '{n}' is not registered "
-                "on this solver".format(n=name))
+
+        # Reifies everything just to get this dimension, expensive
+        return reify_dims(self._dims)[name]
 
     def fmt_dimension_line(self, name, description, global_size, local_size, extents):
         return '%-*s%-*s%-*s%-*s%-*s' % (
