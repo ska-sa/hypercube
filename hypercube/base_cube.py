@@ -46,54 +46,6 @@ class PropertyDescriptor(object):
     def __delete__(self, instance):
         del self.data[instance]
 
-def reify_dims(dims, copy=True):
-    """
-    Reify dimensions. If copy is True,
-    returns a copy of dims else performs this inplace.
-    """
-
-    from expressions import parse_expression
-
-    dims = ({ k : d.copy() for k, d in dims.iteritems() }
-        if copy else dims)
-    G = { d.name: d.global_size for d in dims.itervalues() }
-    L = { d.name: d.local_size for d in dims.itervalues() }
-    E0 = { d.name: d.extents[0] for d in dims.itervalues() }
-    E1 = { d.name: d.extents[1] for d in dims.itervalues() }
-
-    for n, d in dims.iteritems():
-        d[DimData.GLOBAL_SIZE] = parse_expression(d[DimData.GLOBAL_SIZE],
-            variables=G, expand=True)
-        d[DimData.LOCAL_SIZE] = parse_expression(d[DimData.LOCAL_SIZE],
-            variables=L, expand=True)
-
-        ext0 = parse_expression(d[DimData.EXTENTS][0],
-            variables=E0, expand=True)
-        ext1 = parse_expression(d[DimData.EXTENTS][1],
-            variables=E1, expand=True)
-
-        d[DimData.EXTENTS] = [ext0, ext1]
-
-        # Force a check of the dimension constraints at this point
-        d.validate()
-
-    return dims
-
-def reify_arrays(arrays, reified_dims, copy=True):
-    """
-    Reify arrays, given the supplied reified dimensions. If copy is True,
-    returns a copy of arrays else performs this inplace.
-    """
-    arrays = ({ k : AttrDict(**a) for k, a in arrays.iteritems() }
-        if copy else arrays)
-
-    for n, a in arrays.iteritems():
-        a.shape = tuple(reified_dims[v][DimData.LOCAL_SIZE]
-            if isinstance(v, str) else v for v in a.shape)
-
-    return arrays
-
-
 class HyperCube(object):
     """ Hypercube. """
 
@@ -439,7 +391,7 @@ class HyperCube(object):
 
     def arrays(self, reify=False):
         """ Returns a dictionary of arrays """
-        return (reify_arrays(self._arrays, self.dimensions(reify=True))
+        return (hcu.reify_arrays(self._arrays, self.dimensions(reify=True))
             if reify else self._arrays)
 
     def array(self, name, reify=False):
@@ -459,7 +411,8 @@ class HyperCube(object):
         if not reify:
             return self._arrays[name]
 
-        return reify_arrays({name : self._arrays[name]}, self.dimensions(reify=True))[name]
+        return hcu.reify_arrays({name : self._arrays[name]},
+            self.dimensions(reify=True))[name]
 
     def dimensions(self, reify=False):
         """
@@ -474,7 +427,7 @@ class HyperCube(object):
         """
 
 
-        return reify_dims(self._dims) if reify else self._dims
+        return hcu.reify_dims(self._dims) if reify else self._dims
 
     def dimension(self, name, reify=False):
         """
@@ -493,7 +446,7 @@ class HyperCube(object):
             return self._dims[name]
 
         # Reifies everything just to get this dimension, expensive
-        return reify_dims(self._dims)[name]
+        return hcu.reify_dims(self._dims)[name]
 
     def fmt_dimension_line(self, name, description, global_size, local_size, extents):
         return '%-*s%-*s%-*s%-*s%-*s' % (
