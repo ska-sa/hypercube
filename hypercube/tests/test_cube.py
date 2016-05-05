@@ -37,6 +37,57 @@ class Test(unittest.TestCase):
         """ Tear down each test case """
         pass
 
+    def test_dimension_registration_and_reification(self):
+        """ Test dimension registration and reification """
+        # Set up our problem size
+        ntime, na, nchan, npol = 100, 64, 128, 4
+        nvis = ntime*nchan*na*(na-1)//2
+
+        # Set up the hypercube dimensions
+        cube = hypercube.hypercube('hypercube')
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+        cube.register_dimension('npol', npol)
+        cube.register_dimension('nbl', 'na*(na-1)//2')
+        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+
+        # Test that we still have an abstract dimensions when
+        # no reification is requested
+        dims = cube.dimensions()
+        self.assertTrue(dims['nvis'].global_size == 'ntime*nbl*nchan')
+        self.assertTrue(dims['nvis'].local_size == 'ntime*nbl*nchan')
+        self.assertTrue(dims['nvis'].extents == (0, 'ntime*nbl*nchan'))
+
+        # Test that we now have concrete dimensions when
+        # reification is requested
+        dims = cube.dimensions(reify=True)
+        self.assertTrue(dims['nvis'].global_size == nvis)
+        self.assertTrue(dims['nvis'].local_size == nvis)
+        self.assertTrue(dims['nvis'].extents[0] == 0)
+        self.assertTrue(dims['nvis'].extents == (0, nvis))
+
+        # Reduce the local size of the ntime, na and nchan dimensions
+        local_ntime = ntime//2
+        local_na = na - 2
+        local_nchan = nchan // 4
+        local_nvis = local_ntime*local_nchan*local_na*(local_na-1)//2
+
+        cube.update_dimension(name='ntime', local_size=local_ntime,
+            extents=[0,local_ntime], safety=False)
+        cube.update_dimension(name='na', local_size=local_na,
+            extents=[0,local_na], safety=False)
+        cube.update_dimension(name='nchan', local_size=local_nchan,
+            extents=[0,local_nchan], safety=False)
+
+        # Test that we now have concrete dimensions when
+        # reification is requested
+        dims = cube.dimensions(reify=True)
+        self.assertTrue(dims['nvis'].global_size == nvis)
+        self.assertTrue(dims['nvis'].local_size == local_nvis)
+        self.assertTrue(dims['nvis'].extents[0] == 0)
+        self.assertTrue(dims['nvis'].extents == (0, local_nvis))
+
     def test_array_registration_and_reification(self):
         """ Test array registration and reification """
         # Set up our problem size
