@@ -113,7 +113,6 @@ class HyperCube(object):
         return np.sum([hcu.array_bytes(a) for a
             in self.arrays(reify=True).itervalues()])
 
-
     def mem_required(self):
         """ Return a string representation of the total memory required """
         return hcu.fmt_bytes(self.bytes_required())
@@ -594,14 +593,20 @@ class HyperCube(object):
     def __str__(self):
         """ Outputs a string representation of this object """
 
-        l = ['']
-        l.extend([s for s in self.gen_dimension_descriptions()])
-        l.append('')
-        l.extend([s for s in self.gen_array_descriptions()])
-        l.append('-'*80)
-        l.append('%-*s: %s' % (18,'Local Memory Usage', self.mem_required()))
-        l.append('-'*80)
-        #l.append('')
-        #l.extend([s for s in self.gen_property_descriptions()])
+        l = []
+
+        if len(self._dims) > 0:
+            l.extend([s for s in self.gen_dimension_descriptions()])
+            l.append('')
+
+        if len(self._arrays) > 0:
+            l.extend([s for s in self.gen_array_descriptions()])
+            l.append('-'*80)
+            l.append('%-*s: %s' % (18,'Local Memory Usage', self.mem_required()))
+            l.append('-'*80)
+            l.append('')
+
+        if len(self._properties) > 0:
+            l.extend([s for s in self.gen_property_descriptions()])
 
         return '\n'.join(l)
