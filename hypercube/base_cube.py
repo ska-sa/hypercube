@@ -571,25 +571,6 @@ class HyperCube(object):
                 p.name, np.dtype(p.dtype).name,
                 getattr(self, p.name), p.default)
 
-    def solve(self):
-        """ Solve the RIME """
-        pass
-
-    def initialise(self):
-        """ Initialise the RIME solver """
-        pass
-
-    def shutdown(self):
-        """ Stop the RIME solver """
-        pass
-
-    def __enter__(self):
-        self.initialise()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.shutdown()
-
     def __str__(self):
         """ Outputs a string representation of this object """
 
