@@ -21,6 +21,8 @@
 import unittest
 import sys
 
+import numpy as np
+
 import hypercube
 
 class Test(unittest.TestCase):
@@ -35,8 +37,49 @@ class Test(unittest.TestCase):
         """ Tear down each test case """
         pass
 
+    def test_array_registration_and_reification(self):
+        """ Test array registration and reification """
+        # Set up our problem size
+        ntime, na, nchan, npol = 100, 64, 128, 4
+
+        # Set up the hypercube dimensions
+        cube = hypercube.hypercube('hypercube')
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+        cube.register_dimension('npol', npol)
+        cube.register_dimension('nbl', 'na*(na-1)//2')
+        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+
+        # Register the visibility array with abstract shape
+        VIS = 'visibilities'
+        abstract_shape = ('ntime','nbl','nchan','npol')
+        cube.register_array(VIS, abstract_shape, np.complex128)
+
+        # Test that we still have an abstract shape when
+        # no reification is requested
+        arrays = cube.arrays()
+        self.assertTrue(arrays[VIS].shape == abstract_shape)
+
+        # Test that we have a concrete shape after reifying the arrays
+        arrays = cube.arrays(reify=True)
+        concrete_shape = (ntime, na*(na-1)//2, nchan, npol)
+        self.assertTrue(arrays[VIS].shape == concrete_shape)
+
+        # Update the local size and extents of the time dimension
+        local_ntime = ntime//2
+        cube.update_dimension(name='ntime', local_size=local_ntime,
+            extents=[0,local_ntime], safety=False)
+
+        # Test that the concrete shape reflects the new local_size
+        # after reifying the arrays
+        arrays = cube.arrays(reify=True)
+        concrete_shape = (local_ntime, na*(na-1)//2, nchan, npol)
+        self.assertTrue(arrays[VIS].shape == concrete_shape)
+
+
     def test_dim_queries(self):
-            # Set up our problem size
+        # Set up our problem size
         ntime, na, nchan = 100, 64, 128
         nbl = na*(na-1)//2
         nvis = ntime*nbl*nchan
