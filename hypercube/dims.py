@@ -141,7 +141,7 @@ class Dimension(AttrDict):
             self[DimData.EXTENTS] = [v for v in exts[0:2]]
 
         # Check that we've been given valid values
-        self.check()
+        self.validate()
 
     def is_expression(self):
         return (isinstance(self[DimData.GLOBAL_SIZE], str) or
@@ -149,10 +149,10 @@ class Dimension(AttrDict):
             isinstance(self[DimData.EXTENTS][0], str) or 
             isinstance(self[DimData.EXTENTS][1], str))
 
-    def check(self):
-        """ Sanity check the contents of a dimension data dictionary """
+    def validate(self):
+        """ Validate the contents of a dimension data dictionary """
 
-        # Currently, we don't check string expressions
+        # Currently, we don't validate string expressions
         if self.is_expression():
             return
 
@@ -162,7 +162,7 @@ class Dimension(AttrDict):
             self[DimData.NAME],
             self[DimData.ZERO_VALID])
 
-        # Sanity check dimensions
+        # Sanity validate dimensions
         assert 0 <= ls <= gs, \
             ("Dimension '{n}' local size {l} is greater than "
             "it's global size {g}").format(

@@ -451,7 +451,7 @@ class HyperCube(object):
                 d[DimData.EXTENTS] = [ext0, ext1]
 
                 # Force a check of the dimension constraints at this point
-                d.check()
+                d.validate()
 
             return dims
 
