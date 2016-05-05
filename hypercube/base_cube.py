@@ -26,7 +26,6 @@ from attrdict import AttrDict
 from collections import OrderedDict
 
 from hypercube.dims import DimData, create_dim_data
-
 import hypercube.util as hcu
 
 class PropertyDescriptor(object):

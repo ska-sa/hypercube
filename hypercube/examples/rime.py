@@ -19,9 +19,9 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from hypercube import hypercube
+import hypercube as hc
 
-cube = hypercube('hypercube')
+cube = hc.HyperCube()
 
 # Register time, baseline, channel and polarisation dimensions
 cube.register_dimension('ntime', 1000, description='Timesteps')

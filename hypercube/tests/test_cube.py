@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2016 SKA South Africa
 #
-# This file is part of hypercube.
+# This file is part of hc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import sys
 
 import numpy as np
 
-import hypercube
+import hypercube as hc
 
 class Test(unittest.TestCase):
     """
@@ -44,7 +44,7 @@ class Test(unittest.TestCase):
         nvis = ntime*nchan*na*(na-1)//2
 
         # Set up the hypercube dimensions
-        cube = hypercube.hypercube('hypercube')
+        cube = hc.HyperCube()
         cube.register_dimension('ntime', ntime)
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
@@ -116,7 +116,7 @@ class Test(unittest.TestCase):
         ntime, na, nchan, npol = 100, 64, 128, 4
 
         # Set up the hypercube dimensions
-        cube = hypercube.hypercube('hypercube')
+        cube = hc.HyperCube()
         cube.register_dimension('ntime', ntime)
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
@@ -163,6 +163,58 @@ class Test(unittest.TestCase):
         arrays = cube.arrays()
         self.assertTrue(arrays[VIS].shape == abstract_shape)
 
+    def test_array_creation(self):
+        ntime, na, nchan, npol = 100, 64, 128, 4
+        nbl = na*(na-1)//2
+
+        # Set up the hypercube dimensions
+        cube = hc.HyperCube()
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+        cube.register_dimension('npol', npol)
+        cube.register_dimension('nbl', 'na*(na-1)//2')
+        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+
+        # Register the array with abstract shapes
+        cube.register_array('visibilities', ('ntime','nbl','nchan','npol'), np.complex128)
+        cube.register_array('uvw', ('ntime', 'nbl', 3), np.float64)
+        cube.register_array('ant_pairs', (2, 'ntime', 'nbl'), np.int64)
+
+        # Create the arrays
+        arrays = hc.create_local_arrays(cube.arrays(reify=True))
+
+        # Check that we get numpy arrays by default
+        for a in arrays.itervalues():
+            self.assertTrue(isinstance(a, np.ndarray))
+
+        # Check that the shape is correct
+        self.assertTrue(arrays['visibilities'].shape == (ntime, nbl, nchan, 4))
+        self.assertTrue(arrays['uvw'].shape == (ntime, nbl, 3))
+        self.assertTrue(arrays['ant_pairs'].shape == (2, ntime, nbl))
+
+        # Check that the type is correct
+        self.assertTrue(arrays['visibilities'].dtype == np.complex128)
+        self.assertTrue(arrays['uvw'].dtype == np.float64)
+        self.assertTrue(arrays['ant_pairs'].dtype == np.int64)
+
+        # Create the arrays
+        arrays = hc.create_local_numpy_arrays_on_cube(cube)
+
+        # Check that we get numpy arrays by default
+        for a in arrays.itervalues():
+            self.assertTrue(isinstance(a, np.ndarray))
+
+        # Check that the shape is correct
+        self.assertTrue(cube.visibilities.shape == (ntime, nbl, nchan, 4))
+        self.assertTrue(cube.uvw.shape == (ntime, nbl, 3))
+        self.assertTrue(cube.ant_pairs.shape == (2, ntime, nbl))
+
+        # Check that the type is correct
+        self.assertTrue(cube.visibilities.dtype == np.complex128)
+        self.assertTrue(cube.uvw.dtype == np.float64)
+        self.assertTrue(cube.ant_pairs.dtype == np.int64)
+
     def test_dim_queries(self):
         # Set up our problem size
         ntime, na, nchan = 100, 64, 128
@@ -170,7 +222,7 @@ class Test(unittest.TestCase):
         nvis = ntime*nbl*nchan
 
         # Create a cube and register some dimensions
-        cube = hypercube.hypercube('hypercube')
+        cube = hc.HyperCube()
         cube.register_dimension('ntime', ntime)
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
@@ -233,7 +285,7 @@ class Test(unittest.TestCase):
                 'nvis': 'ntime*nbl*nchan' })
 
         # Now set up the above example on the hypercube
-        cube = hypercube.hypercube('hypercube')
+        cube = hc.HyperCube()
         cube.register_dimension('ntime', ntime)
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
