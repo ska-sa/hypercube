@@ -114,6 +114,13 @@ class HyperCube(object):
         return D
 
     def register_dimensions(self, dim_list, defaults=True):
+        """
+        >>> slvr.register_dimensions([
+            {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
+            {'name' : 'na', 'local_size' : 3, 'extents' : [2, 7]},
+            ])
+        """
+
         for dim in dim_list:
             self.register_dimension(dim.name, dim)
 
@@ -293,8 +300,8 @@ class HyperCube(object):
         The list should itself contain dictionaries. i.e.
 
         >>> D = [
-            'uvw' : { 'name':'uvw', 'shape':(3,'ntime','nbl'),'dtype':np.float32 },
-            'lm' : { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }
+            { 'name':'uvw', 'shape':(3,'ntime','nbl'),'dtype':np.float32 },
+            { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }
         ]
         """
         for ary in array_list:
@@ -390,13 +397,19 @@ class HyperCube(object):
                 "on this solver".format(n=name))
 
     def arrays(self, reify=False):
-        """ Returns a dictionary of arrays """
+        """
+        Returns a dictionary of arrays. If reify is True,
+        it will replace any dimension within the array shape with
+        the local_size of the dimension.
+        """
         return (hcu.reify_arrays(self._arrays, self.dimensions(reify=True))
             if reify else self._arrays)
 
     def array(self, name, reify=False):
         """
-        Returns an array object.
+        Returns an array object. If reify is True,
+        it will replace any dimension within the array shape with
+        the local_size of the dimension.
 
         Reifying arrays "individually" is expensive since, in practice,
         all dimensions must be reified to handle dependent expressions.
