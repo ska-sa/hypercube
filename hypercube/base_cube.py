@@ -431,7 +431,7 @@ class HyperCube(object):
             from expressions import parse_expression
 
             dims = ({ k : d.copy() for k, d in dims.iteritems() }
-                if copy else dims )
+                if copy else dims)
             G = { d.name: d.global_size for d in dims.itervalues() }
             L = { d.name: d.local_size for d in dims.itervalues() }
             E0 = { d.name: d.extents[0] for d in dims.itervalues() }
@@ -442,10 +442,13 @@ class HyperCube(object):
                     variables=G, expand=True)
                 d[DimData.LOCAL_SIZE] = parse_expression(d[DimData.LOCAL_SIZE],
                     variables=L, expand=True)
-                d[DimData.EXTENTS][0] = parse_expression(d[DimData.EXTENTS][0],
+
+                ext0 = parse_expression(d[DimData.EXTENTS][0],
                     variables=E0, expand=True)
-                d[DimData.EXTENTS][1] = parse_expression(d[DimData.EXTENTS][1],
+                ext1 = parse_expression(d[DimData.EXTENTS][1],
                     variables=E1, expand=True)
+
+                d[DimData.EXTENTS] = [ext0, ext1]
 
                 # Force a check of the dimension constraints at this point
                 d.check()
