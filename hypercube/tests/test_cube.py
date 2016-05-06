@@ -57,14 +57,13 @@ class Test(unittest.TestCase):
         dims = cube.dimensions()
         self.assertTrue(dims['nvis'].global_size == 'ntime*nbl*nchan')
         self.assertTrue(dims['nvis'].local_size == 'ntime*nbl*nchan')
-        self.assertTrue(dims['nvis'].extents == (0, 'ntime*nbl*nchan'))
+        self.assertTrue(dims['nvis'].extents == ('ntime*nbl*nchan', 'ntime*nbl*nchan'))
 
         # Test that we now have concrete dimensions when
         # reification is requested
         dims = cube.dimensions(reify=True)
         self.assertTrue(dims['nvis'].global_size == nvis)
         self.assertTrue(dims['nvis'].local_size == nvis)
-        self.assertTrue(dims['nvis'].extents[0] == 0)
         self.assertTrue(dims['nvis'].extents == (0, nvis))
 
         # Reduce the local size of the ntime, na and nchan dimensions
@@ -92,14 +91,12 @@ class Test(unittest.TestCase):
         dim = cube.dimension('nvis')
         self.assertTrue(dim.global_size == 'ntime*nbl*nchan')
         self.assertTrue(dim.local_size == 'ntime*nbl*nchan')
-        self.assertTrue(dim.extents[0] == 0)
-        self.assertTrue(dim.extents == (0, 'ntime*nbl*nchan'))
+        self.assertTrue(dim.extents == ('ntime*nbl*nchan', 'ntime*nbl*nchan'))
 
         # Test individual dimension reification
         dim = cube.dimension('nvis', reify=True)
         self.assertTrue(dim.global_size == nvis)
         self.assertTrue(dim.local_size == local_nvis)
-        self.assertTrue(dim.extents[0] == 0)
         self.assertTrue(dim.extents == (0, local_nvis))
 
         # Test that we still have an abstract dimensions when
@@ -107,7 +104,7 @@ class Test(unittest.TestCase):
         dims = cube.dimensions()
         self.assertTrue(dims['nvis'].global_size == 'ntime*nbl*nchan')
         self.assertTrue(dims['nvis'].local_size == 'ntime*nbl*nchan')
-        self.assertTrue(dims['nvis'].extents == (0, 'ntime*nbl*nchan'))
+        self.assertTrue(dims['nvis'].extents == ('ntime*nbl*nchan', 'ntime*nbl*nchan'))
 
 
     def test_array_registration_and_reification(self):

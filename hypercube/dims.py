@@ -60,12 +60,18 @@ class Dimension(AttrDict):
         """
         super(Dimension, self).__init__()
 
-        # If dim_data is an integer, start constructing a dictionary from it
+        # If dim_data is an integer or string,
+        # start constructing a dictionary from it
         if isinstance(dim_data, (int, long, np.integer, str)):
             self[DimData.NAME] = name
             self[DimData.GLOBAL_SIZE] = dim_data
             self[DimData.LOCAL_SIZE] = dim_data
-            self[DimData.EXTENTS] = [0, dim_data]
+            
+            if isinstance(dim_data, str):
+                self[DimData.EXTENTS] = [dim_data, dim_data]
+            else:
+                self[DimData.EXTENTS] = [0, dim_data]
+
             self[DimData.DESCRIPTION] = DEFAULT_DESCRIPTION
             self[DimData.SAFETY] = True
             self[DimData.ZERO_VALID] = False
