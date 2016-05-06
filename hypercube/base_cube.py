@@ -275,16 +275,6 @@ class HyperCube(object):
             raise ValueError(('Array %s is already registered '
                 'on this solver object.') % name)
 
-        # Set up a member describing the shape
-        if kwargs.get('shape_member', False) is True:
-            shape_name = hcu.shape_name(name)
-            setattr(self, shape_name, shape)
-
-        # Set up a member describing the dtype
-        if kwargs.get('dtype_member', False) is True:
-            dtype_name = hcu.dtype_name(name)
-            setattr(self, dtype_name, dtype)
-
         # OK, create a record for this array
         A = self._arrays[name] = AttrDict(name=name,
             dtype=dtype, shape=shape,
