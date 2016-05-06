@@ -19,38 +19,38 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 import functools
-from weakref import WeakKeyDictionary
 
 import numpy as np
 
 class ArrayDescriptor(object):
     """ Descriptor class for arrays """
-    def __init__(self, default=None):
-        self.default = default
-        self.data = WeakKeyDictionary()
+    def __init__(self, name):
+        self.name = name
+        self.data = None
 
     def __get__(self, instance, owner):
-        return self.data.get(instance, self.default)
+        return self.data
 
     def __set__(self, instance, value):
-        self.data[instance] = value
+        self.data = value
 
     def __delete__(self, instance):
-        del self.data[instance]
+        del self.data
 
 def gpuarray_factory(shape, dtype):
     import pycuda.gpuarray as gpuarray
     return gpuarray.empty(shape=shape, dtype=dtype)
 
-def generic_stitch(cube, reified_arrays):
+def generic_stitch(cube, arrays):
     """
     Creates descriptors associated with array name and
     then sets the array as a member variable
     """
     
-    for name, ary in reified_arrays.iteritems():
+    for name, ary in arrays.iteritems():
         if name not in cube.__dict__:
-            setattr(type(cube), name, ArrayDescriptor())
+            setattr(type(cube), name, ArrayDescriptor(name))
+
         setattr(cube, name, ary)
 
 def create_local_arrays(reified_arrays, array_factory=None):
@@ -105,9 +105,9 @@ def create_local_arrays_on_cube(cube, reified_arrays=None, array_stitch=None, ar
             If None, obtained from cube.arrays(reify=True)
         array_stitch : function
             A function that stitches array objects onto the cube object.
-            It's signature should be array_stitch(cube, reified_arrays)
-            where cube is a HyperCube object and reified_arrays is a
-            dictionary obtained by calling cube.arrays(reify=True).
+            It's signature should be array_stitch(cube, arrays)
+            where cube is a HyperCube object and arrays is a
+            dictionary containing array objects keyed by their name.
             If None, a default function will be used that creates
             python descriptors associated with the individual array objects.
         array_factory : function
