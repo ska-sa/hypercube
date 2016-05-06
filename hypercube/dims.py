@@ -169,15 +169,16 @@ class Dimension(AttrDict):
             self[DimData.ZERO_VALID])
 
         # Sanity validate dimensions
-        assert 0 <= ls <= gs, \
-            ("Dimension '{n}' local size {l} is greater than "
-            "it's global size {g}").format(
-                n=name, l=ls, g=gs)
+        if ls > gs:
+            raise ValueError("Dimension '{n}' "
+                "local size {l} is greater than "
+                "it's global size {g}".format(n=name, l=ls, g=gs))
 
-        assert E[1] - E[0] <= ls, \
-            ("Dimension '{n}' local size {l} is greater than "
-            "it's extents [{e0}, {e1}]").format(
-                n=name, l=ls, e0=E[0], e1=E[1])
+        if E[1] - E[0] > ls: 
+            raise ValueError("Dimension '{n}' "
+                "extent range [{e0}, {e1}] ({r}) "
+                "is greater than it's local size {l}.".format(
+                    n=name, l=ls, e0=E[0], e1=E[1], r=(E[1] - E[0])))
 
         if zeros:
             assert 0 <= E[0] <= E[1] <= gs, (
