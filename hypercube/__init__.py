@@ -19,17 +19,11 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 from hypercube.base_cube import HyperCube
-from hypercube.numpy_cube import NumpyHyperCube
-from hypercube.cuda_cube import CUDAHyperCube
+
+from hypercube.array_factory import (
+    create_local_arrays,
+    create_local_numpy_arrays_on_cube,
+    create_local_pycuda_arrays_on_cube)
 
 from hypercube.version import __version__
 from hypercube.tests import test
-
-def hypercube(cube_type, **kwargs):
-    if cube_type == 'hypercube':
-        return HyperCube()
-    elif cube_type == 'numpy_cube':
-        return NumpyHyperCube()
-    elif cube_type == 'cuda_cube':
-        import pycuda.autoinit
-        return CUDAHyperCube(context=pycuda.autoinit.context)

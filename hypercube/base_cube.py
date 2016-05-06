@@ -26,6 +26,7 @@ from attrdict import AttrDict
 from collections import OrderedDict
 
 from hypercube.dims import DimData, create_dim_data
+import hypercube.util as hcu
 
 class PropertyDescriptor(object):
     """ Descriptor class for properties """
@@ -60,24 +61,12 @@ class HyperCube(object):
 
     def bytes_required(self):
         """ Returns the memory required by all arrays in bytes."""
-        return np.sum([self.array_bytes(a) for a in self._arrays.itervalues()])
-
-    def array_bytes(self, array):
-        """ Estimates the memory of the supplied array in bytes """
-        return np.product(array.shape)*np.dtype(array.dtype).itemsize
-
-    def fmt_bytes(self, nbytes):
-        """ Returns a human readable string, given the number of bytes """
-        for x in ['B','KB','MB','GB', 'TB']:
-            if nbytes < 1024.0:
-                return "%3.1f%s" % (nbytes, x)
-            nbytes /= 1024.0
-
-        return "%.1f%s" % (nbytes, 'PB')
+        return np.sum([hcu.array_bytes(a) for a
+            in self.arrays(reify=True).itervalues()])
 
     def mem_required(self):
         """ Return a string representation of the total memory required """
-        return self.fmt_bytes(self.bytes_required())
+        return hcu.fmt_bytes(self.bytes_required())
 
     def register_dimension(self, name, dim_data, **kwargs):
         """
@@ -123,7 +112,14 @@ class HyperCube(object):
 
         return D
 
-    def register_dimensions(self, dim_list, defaults=True):
+    def register_dimensions(self, dim_list):
+        """
+        >>> slvr.register_dimensions([
+            {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
+            {'name' : 'na', 'local_size' : 3, 'extents' : [2, 7]},
+            ])
+        """
+
         for dim in dim_list:
             self.register_dimension(dim.name, dim)
 
@@ -164,14 +160,6 @@ class HyperCube(object):
             return
 
         dim.update(update_dict)
-
-        if DimData.LOCAL_SIZE in update_dict:
-            # Update local array shapes
-            T = self.dim_local_size_dict()
-
-            for A in self.arrays().itervalues():
-                if name in A.sshape:
-                    A.shape = self.shape_from_str_tuple(A.sshape, T)
 
     def __dim_attribute(self, attr, *args):
         """
@@ -287,33 +275,9 @@ class HyperCube(object):
             raise ValueError(('Array %s is already registered '
                 'on this solver object.') % name)
 
-        # Get a template dictionary to perform string replacements
-        T = self.dim_local_size_dict()
-
-        # Figure out the actual integer shape,
-        # looking for the string shape in the sshape kwarg if
-        # available, otherwise using the standard shape
-        sshape = kwargs.get('sshape', None)
-        if sshape is not None:
-            del kwargs['sshape']
-        else:
-            sshape = shape
-
-        shape = self.shape_from_str_tuple(sshape, T)
-
-        # Set up a member describing the shape
-        if kwargs.get('shape_member', False) is True:
-            shape_name = self.shape_name(name)
-            setattr(self, shape_name, shape)
-
-        # Set up a member describing the dtype
-        if kwargs.get('dtype_member', False) is True:
-            dtype_name = self.dtype_name(name)
-            setattr(self, dtype_name, dtype)
-
         # OK, create a record for this array
         A = self._arrays[name] = AttrDict(name=name,
-            dtype=dtype, shape=shape, sshape=sshape,
+            dtype=dtype, shape=shape,
             **kwargs)
 
         return A
@@ -325,8 +289,8 @@ class HyperCube(object):
         The list should itself contain dictionaries. i.e.
 
         >>> D = [
-            'uvw' : { 'name':'uvw', 'shape':(3,'ntime','nbl'),'dtype':np.float32 },
-            'lm' : { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }
+            { 'name':'uvw', 'shape':(3,'ntime','nbl'),'dtype':np.float32 },
+            { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }
         ]
         """
         for ary in array_list:
@@ -370,7 +334,7 @@ class HyperCube(object):
 
         # Should we create a setter for this property?
         setter = kwargs.get('setter_method', True)
-        setter_name = self.setter_name(name)
+        setter_name = hcu.setter_name(name)
 
         # Yes, create a default setter
         if isinstance(setter, types.BooleanType) and setter is True:
@@ -421,17 +385,36 @@ class HyperCube(object):
             raise KeyError("Property '{n}' is not registered "
                 "on this solver".format(n=name))
 
-    def arrays(self):
-        """ Returns a dictionary of arrays """
-        return self._arrays
+    def arrays(self, reify=False):
+        """
+        Returns a dictionary of arrays. If reify is True,
+        it will replace any dimension within the array shape with
+        the local_size of the dimension.
+        """
+        return (hcu.reify_arrays(self._arrays, self.dimensions(reify=True))
+            if reify else self._arrays)
 
-    def array(self, name):
-        """ Returns an array """
-        try:
+    def array(self, name, reify=False):
+        """
+        Returns an array object. If reify is True,
+        it will replace any dimension within the array shape with
+        the local_size of the dimension.
+
+        Reifying arrays "individually" is expensive since, in practice,
+        all dimensions must be reified to handle dependent expressions.
+        """
+
+        # Complain if the array doesn't exist
+        if name not in self._arrays:
+            raise KeyError("Array '{n}' is not registered on this solver"
+                .format(n=name))
+
+        # Just return the array if we're not reifying
+        if not reify:
             return self._arrays[name]
-        except KeyError:
-            raise KeyError("Array '{n}' is not registered "
-                "on this solver".format(n=name))
+
+        return hcu.reify_arrays({name : self._arrays[name]},
+            self.dimensions(reify=True))[name]
 
     def dimensions(self, reify=False):
         """
@@ -445,51 +428,27 @@ class HyperCube(object):
 
         """
 
-        def reify_dims(dims, copy=True):
-            from expressions import parse_expression
 
-            dims = { k : d.copy() for k, d in dims.iteritems() } if copy else dims 
-            G = { d.name: d.global_size for d in dims.itervalues() }
-            L = { d.name: d.local_size for d in dims.itervalues() }
-            E0 = { d.name: d.extents[0] for d in dims.itervalues() }
-            E1 = { d.name: d.extents[1] for d in dims.itervalues() }
+        return hcu.reify_dims(self._dims) if reify else self._dims
 
-            for n, d in dims.iteritems():
-                d[DimData.GLOBAL_SIZE] = parse_expression(d[DimData.GLOBAL_SIZE],
-                    variables=G, expand=True)
-                d[DimData.LOCAL_SIZE] = parse_expression(d[DimData.LOCAL_SIZE],
-                    variables=L, expand=True)
-                d[DimData.EXTENTS][0] = parse_expression(d[DimData.EXTENTS][0],
-                    variables=E0, expand=True)
-                d[DimData.EXTENTS][1] = parse_expression(d[DimData.EXTENTS][1],
-                    variables=E1, expand=True)
+    def dimension(self, name, reify=False):
+        """
+        Returns a dimension object.
 
-                # Force a check of the dimension constraints at this point
-                d.check()
+        Reifying dimensions "individually" is expensive since, in practice,
+        all dimensions must be reified to handle dependent expressions.
+        """
+        # Complain if the array doesn't exist
+        if name not in self._dims:
+            raise KeyError("Dimension '{n}' is not registered on this solver"
+                .format(n=name))
 
-            return dims
-
-        return reify_dims(self._dims) if reify else self._dims
-
-    def dimension(self, name):
-        """ Returns a dimension """
-        try:
+        # Just return the array if we're not reifying
+        if not reify:
             return self._dims[name]
-        except KeyError:
-            raise KeyError("Array '{n}' is not registered "
-                "on this solver".format(n=name))
 
-    def shape_name(self, name):
-        """ Constructs a name for the array shape member, based on the array name """
-        return name + '_shape'
-
-    def dtype_name(self, name):
-        """ Constructs a name for the array data-type member, based on the array name """
-        return name + '_dtype'
-
-    def setter_name(self, name):
-        """ Constructs a name for the property, based on the property name """
-        return 'set_' + name
+        # Reifies everything just to get this dimension, expensive
+        return hcu.reify_dims(self._dims)[name]
 
     def fmt_dimension_line(self, name, description, global_size, local_size, extents):
         return '%-*s%-*s%-*s%-*s%-*s' % (
@@ -515,37 +474,6 @@ class HyperCube(object):
             20,value,
             20,default)
 
-    def shape_from_str_tuple(self, sshape, variables, ignore=None):
-        """
-        Substitutes string values in the supplied shape parameter
-        with integer variables stored in a dictionary
-
-        Parameters
-        ----------
-        sshape : tuple/string composed of integers and strings.
-            The strings should related to integral properties
-            registered with this Solver object
-        variables : dictionary
-            Keys with associated integer values. Used to replace
-            string values within the tuple
-        ignore : list
-            A list of tuple strings to ignore
-
-        >>> print self.shape_from_str_tuple((4,'na','ntime'),ignore=['ntime'])
-        (4, 3)
-        """
-        if ignore is None:
-            ignore = []
-
-        if not isinstance(sshape, tuple) and not isinstance(sshape, list):
-            raise TypeError, 'sshape argument must be a tuple or list'
-
-        if not isinstance(ignore, list):
-            raise TypeError, 'ignore argument must be a list'
-
-        return tuple([variables[v] if isinstance(v, str) else int(v)
-            for v in sshape if v not in ignore])
-
     def gen_dimension_descriptions(self):
         """ Generator generating string describing each registered dimension """
         yield 'Registered Dimensions'
@@ -567,11 +495,23 @@ class HyperCube(object):
         yield self.fmt_array_line('Array Name','Size','Type','Shape')
         yield '-'*80
 
-        for a in sorted(self._arrays.itervalues(), key=lambda x: x.name.upper()):
+        # Reify arrays to work out their actual size
+        reified_arrays = self.arrays(reify=True)
+
+        for a in sorted(self.arrays().itervalues(),
+            key=lambda x: x.name.upper()):
+
+            # Get the actual size of the array
+            nbytes = hcu.array_bytes(reified_arrays[a.name])
+            # Print shape tuples without spaces and single quotes
+            sshape = '({s})'.format(s=','.join(
+                [str(v) if not isinstance(v, str) else v
+                for v in a.shape]))
+
             yield self.fmt_array_line(a.name,
-                self.fmt_bytes(self.array_bytes(a)),
+                hcu.fmt_bytes(nbytes),
                 np.dtype(a.dtype).name,
-                a.sshape)
+                sshape)
 
     def gen_property_descriptions(self):
         """ Generator generating string describing each registered property """
@@ -586,36 +526,23 @@ class HyperCube(object):
                 p.name, np.dtype(p.dtype).name,
                 getattr(self, p.name), p.default)
 
-    def solve(self):
-        """ Solve the RIME """
-        pass
-
-    def initialise(self):
-        """ Initialise the RIME solver """
-        pass
-
-    def shutdown(self):
-        """ Stop the RIME solver """
-        pass
-
-    def __enter__(self):
-        self.initialise()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.shutdown()
-
     def __str__(self):
         """ Outputs a string representation of this object """
 
-        l = ['']
-        l.extend([s for s in self.gen_dimension_descriptions()])
-        l.append('')
-        l.extend([s for s in self.gen_array_descriptions()])
-        l.append('-'*80)
-        l.append('%-*s: %s' % (18,'Local Memory Usage', self.mem_required()))
-        l.append('-'*80)
-        #l.append('')
-        #l.extend([s for s in self.gen_property_descriptions()])
+        l = []
+
+        if len(self._dims) > 0:
+            l.extend([s for s in self.gen_dimension_descriptions()])
+            l.append('')
+
+        if len(self._arrays) > 0:
+            l.extend([s for s in self.gen_array_descriptions()])
+            l.append('-'*80)
+            l.append('%-*s: %s' % (18,'Local Memory Usage', self.mem_required()))
+            l.append('-'*80)
+            l.append('')
+
+        if len(self._properties) > 0:
+            l.extend([s for s in self.gen_property_descriptions()])
 
         return '\n'.join(l)

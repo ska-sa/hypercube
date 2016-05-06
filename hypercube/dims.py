@@ -32,6 +32,9 @@ class DimData(object):
     SAFETY = 'safety'
     ZERO_VALID = 'zero_valid'
 
+    ALL = frozenset([NAME, DESCRIPTION, GLOBAL_SIZE, LOCAL_SIZE,
+        EXTENTS, SAFETY, ZERO_VALID])
+
 def create_dim_data(name, dim_data, **kwargs):
     return Dimension(name, dim_data, **kwargs)
 
@@ -57,12 +60,18 @@ class Dimension(AttrDict):
         """
         super(Dimension, self).__init__()
 
-        # If dim_data is an integer, start constructing a dictionary from it
+        # If dim_data is an integer or string,
+        # start constructing a dictionary from it
         if isinstance(dim_data, (int, long, np.integer, str)):
             self[DimData.NAME] = name
             self[DimData.GLOBAL_SIZE] = dim_data
             self[DimData.LOCAL_SIZE] = dim_data
-            self[DimData.EXTENTS] = [0, dim_data]
+            
+            if isinstance(dim_data, str):
+                self[DimData.EXTENTS] = [dim_data, dim_data]
+            else:
+                self[DimData.EXTENTS] = [0, dim_data]
+
             self[DimData.DESCRIPTION] = DEFAULT_DESCRIPTION
             self[DimData.SAFETY] = True
             self[DimData.ZERO_VALID] = False
@@ -138,7 +147,7 @@ class Dimension(AttrDict):
             self[DimData.EXTENTS] = [v for v in exts[0:2]]
 
         # Check that we've been given valid values
-        self.check()
+        self.validate()
 
     def is_expression(self):
         return (isinstance(self[DimData.GLOBAL_SIZE], str) or
@@ -146,10 +155,10 @@ class Dimension(AttrDict):
             isinstance(self[DimData.EXTENTS][0], str) or 
             isinstance(self[DimData.EXTENTS][1], str))
 
-    def check(self):
-        """ Sanity check the contents of a dimension data dictionary """
+    def validate(self):
+        """ Validate the contents of a dimension data dictionary """
 
-        # Currently, we don't check string expressions
+        # Currently, we don't validate string expressions
         if self.is_expression():
             return
 
@@ -159,16 +168,24 @@ class Dimension(AttrDict):
             self[DimData.NAME],
             self[DimData.ZERO_VALID])
 
-        # Sanity check dimensions
-        assert 0 <= ls <= gs, \
-            ("Dimension '{n}' local size {l} is greater than "
-            "it's global size {g}").format(
-                n=name, l=ls, g=gs)
+        # Sanity validate dimensions
+        if ls > gs:
+            raise ValueError("Dimension '{n}' "
+                "local size {l} is greater than "
+                "it's global size {g}".format(n=name, l=ls, g=gs))
 
-        assert E[1] - E[0] <= ls, \
-            ("Dimension '{n}' local size {l} is greater than "
-            "it's extents [{e0}, {e1}]").format(
-                n=name, l=ls, e0=E[0], e1=E[1])
+        if E[1] - E[0] > ls: 
+            raise ValueError("Dimension '{n}' "
+                "extent range [{e0}, {e1}] ({r}) "
+                "is greater than it's local size {l}. "
+                "If this dimension is defined as "
+                "an expression containing multiple "
+                "dimensions, these extents may be "
+                "much larger than the local size. "
+                "Consider forcing the extents "
+                "to [0,1] as meaningful extents "
+                "are unlikely in these cases.".format(
+                    n=name, l=ls, e0=E[0], e1=E[1], r=(E[1] - E[0])))
 
         if zeros:
             assert 0 <= E[0] <= E[1] <= gs, (
