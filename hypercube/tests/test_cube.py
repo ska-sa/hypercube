@@ -43,21 +43,24 @@ class Test(unittest.TestCase):
         ntime, na, nchan, npol = 100, 64, 128, 4
         nvis = ntime*nchan*na*(na-1)//2
 
+        nbl_expr = 'na*(na-1)//2'
+        nvis_expr = 'ntime*nbl*nchan'
+
         # Set up the hypercube dimensions
         cube = hc.HyperCube()
         cube.register_dimension('ntime', ntime)
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
         cube.register_dimension('npol', npol)
-        cube.register_dimension('nbl', 'na*(na-1)//2')
-        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+        cube.register_dimension('nbl', nbl_expr)
+        cube.register_dimension('nvis', nvis_expr)
 
         # Test that we still have an abstract dimensions when
         # no reification is requested
         dims = cube.dimensions()
-        self.assertTrue(dims['nvis'].global_size == 'ntime*nbl*nchan')
-        self.assertTrue(dims['nvis'].local_size == 'ntime*nbl*nchan')
-        self.assertTrue(dims['nvis'].extents == ('ntime*nbl*nchan', 'ntime*nbl*nchan'))
+        self.assertTrue(dims['nvis'].global_size == nvis_expr)
+        self.assertTrue(dims['nvis'].local_size == nvis_expr)
+        self.assertTrue(dims['nvis'].extents == (nvis_expr, nvis_expr))
 
         # Test that we now have concrete dimensions when
         # reification is requested
@@ -89,9 +92,9 @@ class Test(unittest.TestCase):
 
         # Test individual dimension retrieval
         dim = cube.dimension('nvis')
-        self.assertTrue(dim.global_size == 'ntime*nbl*nchan')
-        self.assertTrue(dim.local_size == 'ntime*nbl*nchan')
-        self.assertTrue(dim.extents == ('ntime*nbl*nchan', 'ntime*nbl*nchan'))
+        self.assertTrue(dim.global_size == nvis_expr)
+        self.assertTrue(dim.local_size == nvis_expr)
+        self.assertTrue(dim.extents == (nvis_expr, nvis_expr))
 
         # Test individual dimension reification
         dim = cube.dimension('nvis', reify=True)
@@ -102,9 +105,9 @@ class Test(unittest.TestCase):
         # Test that we still have an abstract dimensions when
         # no reification is requested
         dims = cube.dimensions()
-        self.assertTrue(dims['nvis'].global_size == 'ntime*nbl*nchan')
-        self.assertTrue(dims['nvis'].local_size == 'ntime*nbl*nchan')
-        self.assertTrue(dims['nvis'].extents == ('ntime*nbl*nchan', 'ntime*nbl*nchan'))
+        self.assertTrue(dims['nvis'].global_size == nvis_expr)
+        self.assertTrue(dims['nvis'].local_size == nvis_expr)
+        self.assertTrue(dims['nvis'].extents == (nvis_expr, nvis_expr))
 
 
     def test_array_registration_and_reification(self):
