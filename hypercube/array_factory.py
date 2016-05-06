@@ -135,10 +135,12 @@ def create_local_arrays_on_cube(cube, reified_arrays=None, array_stitch=None, ar
 
     return arrays    
 
-create_local_numpy_arrays_on_cube = functools.partial(create_local_arrays_on_cube,
+create_local_numpy_arrays_on_cube = functools.partial(
+    create_local_arrays_on_cube,
     array_stitch=generic_stitch,
     array_factory=np.empty)
 
-create_local_pycuda_arrays_on_cube = functools.partial(create_local_arrays_on_cube,
+create_local_pycuda_arrays_on_cube = functools.partial(
+    create_local_arrays_on_cube,
     array_stitch=generic_stitch,
     array_factory=gpuarray_factory)
