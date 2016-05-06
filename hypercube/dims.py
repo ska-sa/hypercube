@@ -177,7 +177,14 @@ class Dimension(AttrDict):
         if E[1] - E[0] > ls: 
             raise ValueError("Dimension '{n}' "
                 "extent range [{e0}, {e1}] ({r}) "
-                "is greater than it's local size {l}.".format(
+                "is greater than it's local size {l}. "
+                "If this dimension is defined as "
+                "an expression containing multiple "
+                "dimensions, these extents may be "
+                "much larger than the local size. "
+                "Consider forcing the extents "
+                "to [0,1] as meaningful extents "
+                "are unlikely in these cases.".format(
                     n=name, l=ls, e0=E[0], e1=E[1], r=(E[1] - E[0])))
 
         if zeros:
