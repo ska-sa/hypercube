@@ -69,5 +69,6 @@ setup(name='hypercube',
         'attrdict >= 2.0.0',
         'numpy >= 1.10.1',
         'six >= 1.10.0',
+        'tabulate >= 0.7.5',
     ],
     zip_safe=True)

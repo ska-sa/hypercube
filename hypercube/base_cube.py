@@ -30,6 +30,8 @@ from hypercube.expressions import (expand_expression_map,
     parse_expression as pe)
 import hypercube.util as hcu
 
+from tabulate import tabulate
+
 class PropertyDescriptor(object):
     """ Descriptor class for properties """
     def __init__(self, record_key, default=None, ):
@@ -173,7 +175,7 @@ class HyperCube(object):
         dimensions specified as strings in args.
 
         ntime, nbl, nchan = slvr._dim_attribute('global_size', ntime, 'nbl', 'nchan')
-        
+
         or
 
         ntime, nbl, nchan, nsrc = slvr._dim_attribute('global_size', 'ntime,nbl:nchan nsrc')
@@ -221,7 +223,7 @@ class HyperCube(object):
     def dim_global_size(self, *args):
         """
         ntime, nbl, nchan = slvr.dim_global_size('ntime, 'nbl', 'nchan')
-        
+
         or
 
         ntime, nbl, nchan, nsrc = slvr.dim_global_size('ntime,nbl:nchan nsrc')
@@ -232,7 +234,7 @@ class HyperCube(object):
     def dim_local_size(self, *args):
         """
         ntime, nbl, nchan = slvr.dim_local_size('ntime, 'nbl', 'nchan')
-        
+
         or
 
         ntime, nbl, nchan, nsrc = slvr.dim_local_size('ntime,nbl:nchan nsrc')
@@ -243,7 +245,7 @@ class HyperCube(object):
     def dim_lower_extent(self, *args):
         """
         t_ex, bl_ex, ch_ex = slvr.dim_lower_extent('ntime, 'nbl', 'nchan')
-        
+
         or
 
         t_ex, bl_ex, ch_ex, src_ex = slvr.dim_lower_extent('ntime,nbl:nchan nsrc')
@@ -254,7 +256,7 @@ class HyperCube(object):
     def dim_upper_extent(self, *args):
         """
         t_ex, bl_ex, ch_ex = slvr.dim_upper_extent('ntime, 'nbl', 'nchan')
-        
+
         or
 
         t_ex, bl_ex, ch_ex, src_ex = slvr.dim_upper_extent('ntime,nbl:nchan nsrc')
@@ -467,100 +469,62 @@ class HyperCube(object):
         # Reifies everything just to get this dimension, expensive
         return hcu.reify_dims(self._dims)[name]
 
-    def fmt_dimension_line(self, name, description, global_size, local_size, extents):
-        return '%-*s%-*s%-*s%-*s%-*s' % (
-            15,name,
-            20,description,
-            12,global_size,
-            12,local_size,
-            15,extents)
+    def gen_dimension_table(self):
+        """ 2D array describing each registered dimension together with headers - for use in __str__ """
+        headers = ['Dimension Name', 'Description', 'Global Size', 'Local Size', 'Extents']
 
+        table = []
+        for dimval in sorted(self.dimensions(reify=True).itervalues(),
+                             key=lambda dval: dval.name.upper()):
+            table.append([dimval.name, dimval.description, dimval.global_size, dimval.local_size, (dimval.lower_extent, dimval.upper_extent)])
+        return table, headers
 
-    def fmt_array_line(self, name, size, dtype, shape):
-        """ Format array parameters on an 80 character width line """
-        return '%-*s%-*s%-*s%-*s' % (
-            20,name,
-            10,size,
-            15,dtype,
-            35,shape)
-
-    def fmt_property_line(self, name, dtype, value, default):
-        return '%-*s%-*s%-*s%-*s' % (
-            20,name,
-            10,dtype,
-            20,value,
-            20,default)
-
-    def gen_dimension_descriptions(self):
-        """ Generator generating string describing each registered dimension """
-        yield 'Registered Dimensions'
-        yield '-'*80
-        yield self.fmt_dimension_line('Dimension Name', 'Description', 'Global Size',
-            'Local Size', 'Extents')
-        yield '-'*80
-
-        for d in sorted(self.dimensions(reify=True).itervalues(),
-            key=lambda x: x.name.upper()):
-
-            yield self.fmt_dimension_line(
-                d.name, d.description, d.global_size, d.local_size,
-                (d.lower_extent, d.upper_extent))
-
-    def gen_array_descriptions(self):
-        """ Generator generating strings describing each registered array """
-        yield 'Registered Arrays'
-        yield '-'*80
-        yield self.fmt_array_line('Array Name','Size','Type','Shape')
-        yield '-'*80
+    def gen_array_table(self):
+        """ 2D array describing each registered array together with headers - for use in __str__ """
+        headers = ['Array Name', 'Size', 'Type', 'Shape']
 
         # Reify arrays to work out their actual size
         reified_arrays = self.arrays(reify=True)
 
-        for a in sorted(self.arrays().itervalues(),
-            key=lambda x: x.name.upper()):
-
+        table = []
+        for arrval in sorted(self.arrays().itervalues(),
+                             key=lambda aval: aval.name.upper()):
             # Get the actual size of the array
-            nbytes = hcu.array_bytes(reified_arrays[a.name])
+            nbytes = hcu.array_bytes(reified_arrays[arrval.name])
             # Print shape tuples without spaces and single quotes
-            sshape = '({s})'.format(s=','.join(
-                [str(v) if not isinstance(v, str) else v
-                for v in a.shape]))
+            sshape = '(%s)' % (','.join(map(str, arrval.shape)),)
+            table.append([arrval.name, hcu.fmt_bytes(nbytes), np.dtype(arrval.dtype).name, sshape])
+        return table, headers
 
-            yield self.fmt_array_line(a.name,
-                hcu.fmt_bytes(nbytes),
-                np.dtype(a.dtype).name,
-                sshape)
+    def gen_property_table(self):
+        """ 2D array describing each registered property together with headers - for use in __str__ """
+        headers = ['Property Name', 'Type', 'Value', 'Default Value']
 
-    def gen_property_descriptions(self):
-        """ Generator generating string describing each registered property """
-        yield 'Registered Properties'
-        yield '-'*80
-        yield self.fmt_property_line('Property Name',
-            'Type', 'Value', 'Default Value')
-        yield '-'*80
-
-        for p in sorted(self._properties.itervalues(), key=lambda x: x.name.upper()):
-            yield self.fmt_property_line(
-                p.name, np.dtype(p.dtype).name,
-                getattr(self, p.name), p.default)
+        table = []
+        for propval in sorted(self._properties.itervalues(),
+                              key=lambda pval: pval.name.upper()):
+            table.append([propval.name, np.dtype(propval.dtype).name, getattr(self, propval.name), propval.default])
+        return table, headers
 
     def __str__(self):
         """ Outputs a string representation of this object """
 
-        l = []
+        result = ''
 
         if len(self._dims) > 0:
-            l.extend([s for s in self.gen_dimension_descriptions()])
-            l.append('')
+            table, headers = self.gen_dimension_table()
+            assert headers == ['Dimension Name', 'Description', 'Global Size', 'Local Size', 'Extents']
+            result += "Registered Dimensions:\n%s\n\n" % (tabulate(table, headers=headers),)
 
         if len(self._arrays) > 0:
-            l.extend([s for s in self.gen_array_descriptions()])
-            l.append('-'*80)
-            l.append('%-*s: %s' % (18,'Local Memory Usage', self.mem_required()))
-            l.append('-'*80)
-            l.append('')
+            table, headers = self.gen_array_table()
+            table.append(['Local Memory Usage', self.mem_required(), '', ''])
+            assert headers == ['Array Name', 'Size', 'Type', 'Shape']
+            result += "Registered Arrays:\n%s\n\n" % (tabulate(table, headers=headers),)
 
         if len(self._properties) > 0:
-            l.extend([s for s in self.gen_property_descriptions()])
+            table, headers = self.gen_property_table()
+            assert headers == ['Property Name', 'Type', 'Value', 'Default Value']
+            result += "Registered Properties:\n%s\n\n" % (tabulate(table, headers=headers),)
 
-        return '\n'.join(l)
+        return result
