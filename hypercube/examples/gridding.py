@@ -56,19 +56,16 @@ print('REDUCING LOCAL PROBLEM SIZE\n',
 print('\n'*3)
 
 # Reduce local grid width to 1000 and globally handle 1000 - 1256
-cube.update_dimension(name='grid_width',
-    local_size=256, extents=[1000, 1256],
-    safety=False) # Turn off the safety for local size updates
+cube.update_dimension(name='grid_width',local_size=256,
+    lower_extent=1000, upper_extent=1256)
 
 # Reduce local grid height to 1000 and globally handle range 1000 - 1256
-cube.update_dimension(name='grid_height',
-    local_size=256, extents=[1000, 1256],
-    safety=False) # Turn off the safety for local size updates
+cube.update_dimension(name='grid_height', local_size=256,
+    lower_extent=1000, upper_extent=1256)
 
 # Reduce local number of channels to 128 and globally handle range 600-700
-cube.update_dimension(name='nchan',
-    local_size=128, extents=[600, 700],
-    safety=False) # Turn off the safety for local size updates
+cube.update_dimension(name='nchan', local_size=128,
+    lower_extent=600, upper_extent=700)
 
 print (cube)
 
@@ -77,8 +74,8 @@ print (cube)
 np_cube = hc.HyperCube()
 
 # Register dimension and array information from the original hypercube
-np_cube.register_dimensions([d for d in cube.dimensions().itervalues()])
-np_cube.register_arrays([a for a in cube.arrays().itervalues()])
+np_cube.register_dimensions(cube.dimensions().itervalues())
+np_cube.register_arrays(cube.arrays().itervalues())
 hc.create_local_numpy_arrays_on_cube(np_cube)
 
 # Get some dimension information to check our numpy shape size
@@ -99,13 +96,12 @@ try:
     cuda_cube = hc.HyperCube()
 
     # Register dimension and array information from the original hypercube
-    cuda_cube.register_dimensions([d for d in cube.dimensions().itervalues()])
-    cuda_cube.register_arrays([a for a in cube.arrays().itervalues()])
+    cuda_cube.register_dimensions(cube.dimensions().itervalues())
+    cuda_cube.register_arrays(cube.arrays().itervalues())
 
-    # Reduce local number of channels to 128 and globally handle range 600-700
+    # Reduce local number of facets to 1 and handle [0,1]
     cuda_cube.update_dimension(name='nfacet',
-        local_size=1, extents=[0, 1],
-        safety=False) # Turn off the safety for local size updates
+        local_size=1, lower_extent=0, upper_extent=1)
 
     hc.create_local_pycuda_arrays_on_cube(cuda_cube)
 

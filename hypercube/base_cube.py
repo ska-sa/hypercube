@@ -18,14 +18,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import numpy as np
 import types
 
 from weakref import WeakKeyDictionary
 from attrdict import AttrDict
-from collections import OrderedDict
 
-from hypercube.dims import DimData, create_dim_data
+from hypercube.dims import create_dimension
+from hypercube.expressions import (expand_expression_map,
+    parse_expression as pe)
 import hypercube.util as hcu
 
 class PropertyDescriptor(object):
@@ -55,9 +57,9 @@ class HyperCube(object):
 
         # Dictionaries to store records about our
         # dimensions, arrays and properties
-        self._dims = OrderedDict()
-        self._arrays = OrderedDict()
-        self._properties = OrderedDict()
+        self._dims = collections.OrderedDict()
+        self._arrays = collections.OrderedDict()
+        self._properties = collections.OrderedDict()
 
     def bytes_required(self):
         """ Returns the memory required by all arrays in bytes."""
@@ -74,30 +76,35 @@ class HyperCube(object):
 
         Arguments
         ---------
-            dim_data : integer or dict
-
+            dim_data : integer or Dimension
+                if an integer, this will be used to
+                define the global_size of the dimension
+                and possibly other attributes if they are
+                not present in kwargs.
+                If a Dimension, it will be updated with
+                any appropriate keyword arguments
 
         Keyword Arguments
         -----------------
             description : string
                 The description for this dimension.
                 e.g. 'Number of timesteps'.
-            global_size : integer
-                The global size of this dimension across
-                all solvers.
             local_size : integer or None
                 The local size of this dimension
                 on this solver. If None, set to
                 the global_size.
-            extents : list or tuple of length 2
-                The extent of the dimension on the solver.
-                E[0] < E[1] <= local_size must hold.
+            lower_extent : integer or None
+                The lower extent of this dimension
+                within the global space
+            upper_extent : integer or None
+                The upper extent of this dimension
+                within the global space
             zero_valid : boolean
                 If True, this dimension may be zero-sized.
 
         Returns
         -------
-        A dictionary describing this dimension
+        A Dimension object
         """
 
         if name in self._dims:
@@ -108,7 +115,8 @@ class HyperCube(object):
                 "a different name!").format(n=name))
 
         # Create the dimension dictionary
-        D = self._dims[name] = create_dim_data(name, dim_data, **kwargs)
+        D = self._dims[name] = create_dimension(name,
+            dim_data, **kwargs)
 
         return D
 
@@ -134,7 +142,7 @@ class HyperCube(object):
             self.update_dimension(**dim_data)
 
 
-    def update_dimension(self, **update_dict):
+    def update_dimension(self, name, **update_dict):
         """
         Update the dimension size and extents.
 
@@ -142,8 +150,6 @@ class HyperCube(object):
         ---------
             update_dict : dict
         """
-        name = update_dict.get(DimData.NAME, None)
-
         if not name:
             raise AttributeError("A dimension name is required to update "
                 "a dimension. Update dictionary {u}."
@@ -159,22 +165,21 @@ class HyperCube(object):
 
             return
 
-        dim.update(update_dict)
+        dim.update(**update_dict)
 
-    def __dim_attribute(self, attr, *args):
+    def _dim_attribute(self, attr, *args):
         """
         Returns a list of dimension attribute attr, for the
         dimensions specified as strings in args.
 
-        ntime, nbl, nchan = slvr.__dim_attribute('global_size', ntime, 'nbl', 'nchan')
+        ntime, nbl, nchan = slvr._dim_attribute('global_size', ntime, 'nbl', 'nchan')
         
         or
 
-        ntime, nbl, nchan, nsrc = slvr.__dim_attribute('global_size', 'ntime,nbl:nchan nsrc')
+        ntime, nbl, nchan, nsrc = slvr._dim_attribute('global_size', 'ntime,nbl:nchan nsrc')
         """
 
         import re
-        from expressions import parse_expression as pe
 
         # If we got a single string argument, try splitting it by separators
         if len(args) == 1 and isinstance(args[0], str):
@@ -182,15 +187,36 @@ class HyperCube(object):
 
         # Create a variable template from this attribute
         # for use in parse_expressions below
-        T = { d.name: d[attr] for d in self._dims.itervalues() }
+        T = { d.name: getattr(d, attr) for d in self._dims.itervalues() }
 
         # Now get the specific attribute for each argument, parsing
         # any string expressions on the way
-        result = [pe(self._dims[name][attr], variables=T, expand=True)
+        result = [pe(getattr(self._dims[name], attr),
+                variables=T, expand=True)
             for name in args]
 
         # Return single element if length one else entire list
         return result[0] if len(result) == 1 else result
+
+    def dim_global_size_dict(self, reify=True):
+        """ Returns a mapping of dimension name to global size """
+        D = { d.name: d.global_size for d in self._dims.itervalues()}
+        return expand_expression_map(D) if reify else D
+
+    def dim_local_size_dict(self, reify=True):
+        """ Returns a mapping of dimension name to local size """
+        D = { d.name: d.local_size for d in self._dims.itervalues()}
+        return expand_expression_map(D) if reify else D
+
+    def dim_lower_extent_dict(self, reify=True):
+        """ Returns a mapping of dimension name to lower_extent """
+        D = { d.name: d.lower_extent for d in self._dims.itervalues()}
+        return expand_expression_map(D) if reify else D
+
+    def dim_upper_extent_dict(self, reify=True):
+        """ Returns a mapping of dimension name to upper_extent """
+        D = { d.name: d.upper_extent for d in self._dims.itervalues()}
+        return expand_expression_map(D) if reify else D
 
     def dim_global_size(self, *args):
         """
@@ -201,7 +227,7 @@ class HyperCube(object):
         ntime, nbl, nchan, nsrc = slvr.dim_global_size('ntime,nbl:nchan nsrc')
         """
 
-        return self.__dim_attribute(DimData.GLOBAL_SIZE, *args)
+        return self._dim_attribute('global_size', *args)
 
     def dim_local_size(self, *args):
         """
@@ -212,36 +238,38 @@ class HyperCube(object):
         ntime, nbl, nchan, nsrc = slvr.dim_local_size('ntime,nbl:nchan nsrc')
         """
 
-        return self.__dim_attribute(DimData.LOCAL_SIZE, *args)
+        return self._dim_attribute('local_size', *args)
 
-    def dim_global_size_dict(self):
-        """ Returns a mapping of dimension name to global size """
-        from expressions import expand_expression_map
-
-        return expand_expression_map({ d.name: d.global_size
-            for d in self._dims.itervalues()})
-
-    def dim_local_size_dict(self):
-        """ Returns a mapping of dimension name to local size """
-        from expressions import expand_expression_map
-
-        return expand_expression_map({ d.name: d.local_size
-            for d in self._dims.itervalues()})
-
-    def dim_extents(self, *args):
+    def dim_lower_extent(self, *args):
         """
-        t_ex, bl_ex, ch_ex = slvr.dim_extents('ntime, 'nbl', 'nchan')
+        t_ex, bl_ex, ch_ex = slvr.dim_lower_extent('ntime, 'nbl', 'nchan')
         
         or
 
-        t_ex, bl_ex, ch_ex, src_ex = slvr.dim_extents('ntime,nbl:nchan nsrc')
+        t_ex, bl_ex, ch_ex, src_ex = slvr.dim_lower_extent('ntime,nbl:nchan nsrc')
         """
 
-        return self.__dim_attribute(DimData.EXTENTS, *args)
+        return self._dim_attribute('lower_extent', *args)
 
-    def dim_extents_dict(self):
-        """ Returns a mapping of dimension name to extents """
-        return { d.name: d.extents for d in self.__dims.itervalues() }
+    def dim_upper_extent(self, *args):
+        """
+        t_ex, bl_ex, ch_ex = slvr.dim_upper_extent('ntime, 'nbl', 'nchan')
+        
+        or
+
+        t_ex, bl_ex, ch_ex, src_ex = slvr.dim_upper_extent('ntime,nbl:nchan nsrc')
+        """
+
+        return self._dim_attribute('upper_extent', *args)
+
+    def dim_extents(self, *args):
+        l = self.dim_lower_extent(*args)
+        u = self.dim_upper_extent(*args)
+
+        if isinstance(l, collections.Sequence):
+            return zip(l, u)
+        else:
+            return (l, u)
 
     def register_array(self, name, shape, dtype, **kwargs):
         """
@@ -255,15 +283,6 @@ class HyperCube(object):
                 Shape of the array.
             dtype : data-type
                 The data-type for the array.
-
-        Keyword Arguments
-        -----------------
-            shape_member : boolean
-                True if a member called 'name_shape' should be
-                created on the Solver object.
-            dtype_member : boolean
-                True if a member called 'name_dtype' should be
-                created on the Solver object.
 
         Returns
         -------
@@ -391,8 +410,8 @@ class HyperCube(object):
         it will replace any dimension within the array shape with
         the local_size of the dimension.
         """
-        return (hcu.reify_arrays(self._arrays, self.dimensions(reify=True))
-            if reify else self._arrays)
+        return (self._arrays if not reify else
+            hcu.reify_arrays(self._arrays, self.dimensions(reify=True)))
 
     def array(self, name, reify=False):
         """
@@ -416,7 +435,7 @@ class HyperCube(object):
         return hcu.reify_arrays({name : self._arrays[name]},
             self.dimensions(reify=True))[name]
 
-    def dimensions(self, reify=False):
+    def dimensions(self, reify=False, copy=True):
         """
         Return a dictionary of dimensions
 
@@ -425,9 +444,7 @@ class HyperCube(object):
             reify : boolean
                 if True, converts any expressions in the dimension
                 information to integers.
-
         """
-
 
         return hcu.reify_dims(self._dims) if reify else self._dims
 
@@ -486,7 +503,8 @@ class HyperCube(object):
             key=lambda x: x.name.upper()):
 
             yield self.fmt_dimension_line(
-                d.name, d.description, d.global_size, d.local_size, d.extents)
+                d.name, d.description, d.global_size, d.local_size,
+                (d.lower_extent, d.upper_extent))
 
     def gen_array_descriptions(self):
         """ Generator generating strings describing each registered array """
