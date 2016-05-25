@@ -282,6 +282,50 @@ class Test(unittest.TestCase):
         self.assertTrue(_nchan == local_nchan)
         self.assertTrue(_nvis == local_nvis)
 
+    def test_ignore_extents(self):
+        # Set up our problem size
+        ntime, na, nchan, npol = 100, 64, 128, 4
+        nbl_expr = 'na*(na-1)//2'
+        nbl = na*(na-1)//2
+        nvis = ntime*nbl*nchan
+
+        # Set up the hypercube dimensions
+        cube = hc.HyperCube()
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+        cube.register_dimension('npol', npol)
+        #import pdb; pdb.set_trace()
+        cube.register_dimension('nbl', nbl_expr, ignore_extents=False)
+        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+
+        dims = cube.dimensions()
+
+        # Not using an expression, should be False
+        self.assertTrue(dims['nbl'].ignore_extents == False)
+        # Explicitly mandated to be False
+        self.assertTrue(dims['nbl'].ignore_extents == False)
+        # Is an expression, ignore_extents defaults to True
+        self.assertTrue(dims['nvis'].ignore_extents == True)
+
+        # Test that trying to set the upper_extent beyond
+        # the global size fails in the case of nbl
+        with self.assertRaises(ValueError) as cm:
+            cube.update_dimension('nbl', upper_extent=nbl+3)
+            cube.dimensions(reify=True)
+
+        self.assertTrue('nbl' in cm.exception.message)
+        self.assertTrue(str(nbl+3) in cm.exception.message)
+        self.assertTrue(str(nbl) in cm.exception.message)
+
+        # Fix up the upper_extent for the next test case
+        cube.update_dimension('nbl', upper_extent=nbl_expr)
+
+        # Test that setting the upper_extent beyond the
+        # global size succeeds in the case of nvis
+        cube.update_dimension('nvis', upper_extent=nvis+3)
+        cube.dimensions(reify=True)
+
     def test_parse_expression(self):
         """ Test expression parsing """
         from hypercube.expressions import parse_expression

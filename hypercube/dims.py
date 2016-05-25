@@ -38,16 +38,18 @@ def create_dimension(name, dim_data, **kwargs):
 class Dimension(object):
     __slots__ = ['_name', '_global_size', '_local_size',
         '_lower_extent', '_upper_extent',
-        '_description', '_zero_valid']
+        '_description', '_zero_valid', '_ignore_extents']
 
     def __init__(self, name, global_size, local_size=None,
             lower_extent=None, upper_extent=None,
-            description=None,
-            zero_valid=True):
+            description=None, zero_valid=True, ignore_extents=None):
         """
-        Create a dimension data dictionary from supplied argument
+        Create a dimension data dictionary from supplied arguments
         """
         super(Dimension, self).__init__()
+
+        def _is_extent_expr(l, u):
+            return isinstance(l, str) or isinstance(u, str)
 
         self._name = name
         self._global_size = global_size
@@ -57,6 +59,10 @@ class Dimension(object):
         self._upper_extent = upper_extent or global_size
         self._description = description or DEFAULT_DESCRIPTION
         self._zero_valid = zero_valid
+
+        self._ignore_extents = (ignore_extents if ignore_extents is not None
+            else (True if _is_extent_expr(self.lower_extent, self.upper_extent)
+                else False))
 
     @property
     def name(self):
@@ -90,24 +96,30 @@ class Dimension(object):
     def zero_valid(self):
         return self._zero_valid
 
+    @property
+    def ignore_extents(self):
+        return self._ignore_extents
+    
     def update(self, local_size=None,
         lower_extent=None, upper_extent=None,
-        description=None, zero_valid=None):
+        description=None, zero_valid=None,
+        ignore_extents=None):
 
         self._local_size = local_size or self._local_size
         self._lower_extent = lower_extent or self._lower_extent
         self._upper_extent = upper_extent or self._upper_extent
         self._description = description or self._description
         self._zero_valid = zero_valid or self._zero_valid
+        self._ignore_extents = ignore_extents or self._ignore_extents
 
         # Check that we've been given valid values
         self.validate()
 
     def is_expression(self):
-        return (isinstance(self._global_size, str) or
-            isinstance(self._local_size, str) or
-            isinstance(self._lower_extent, str) or 
-            isinstance(self._upper_extent, str))
+        return (isinstance(self.global_size, str) or
+            isinstance(self.local_size, str) or
+            isinstance(self.lower_extent, str) or 
+            isinstance(self.upper_extent, str))
 
     def validate(self):
         """ Validate the contents of a dimension data dictionary """
@@ -116,14 +128,18 @@ class Dimension(object):
         if self.is_expression():
             return
 
-        # Sanity validate dimensions
-        if self._local_size > self._global_size:
+        # Validate dimensions
+        if self.local_size > self.global_size:
             raise ValueError("Dimension '{n}' "
                 "local size {l} is greater than "
                 "it's global size {g}".format(n=self._name,
                     l=self._local_size, g=self._global_size))
 
-        if self._upper_extent - self._lower_extent > self._local_size:
+        # Don't do any extent checking
+        if self.ignore_extents:
+            return
+
+        if self.upper_extent - self.lower_extent > self.local_size:
             raise ValueError("Dimension '{n}' "
                 "extent range [{el}, {eu}] ({r}) "
                 "is greater than it's local size {l}. "
@@ -131,10 +147,10 @@ class Dimension(object):
                 "an expression containing multiple "
                 "dimensions, these extents may be "
                 "much larger than the local size. "
-                "Consider forcing the extents "
-                "to [0,1] as meaningful extents "
-                "are unlikely in these cases.".format(
-                    n=name, l=ls,
+                "Consider ignoring extents by setting "
+                "the 'ignore_extents' flag when "
+                "creating this dimension.".format(
+                    n=self.name, l=self.local_size,
                     el=self.lower_extent, eu=self.upper_extent,
                     r=self.upper_extent - self.lower_extent))
 

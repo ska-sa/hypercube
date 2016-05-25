@@ -67,7 +67,9 @@ def reify_dims(dims):
         local_size=pe(d.local_size, variables=L, expand=True),
         lower_extent=pe(d.lower_extent, variables=EL, expand=True),
         upper_extent=pe(d.upper_extent, variables=EU, expand=True),
-        description=d.description, zero_valid=d.zero_valid)
+        description=d.description,
+        ignore_extents=d.ignore_extents,
+        zero_valid=d.zero_valid)
             for d in dims.itervalues() }
 
     # Validate reified dimensions
