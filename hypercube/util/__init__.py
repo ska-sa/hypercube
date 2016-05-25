@@ -21,7 +21,8 @@
 from attrdict import AttrDict
 import numpy as np
 
-from hypercube.dims import DimData
+from hypercube.dims import Dimension
+from hypercube.expressions import parse_expression as pe
 
 def array_bytes(array):
     """ Estimates the memory of the supplied array in bytes """
@@ -49,38 +50,31 @@ def setter_name(name):
     return 'set_' + name
 
 
-def reify_dims(dims, copy=True):
+def reify_dims(dims):
     """
-    Reify dimensions. If copy is True,
-    returns a copy of dims else performs this inplace.
+    Returns a reified copy of dims
     """
 
-    from hypercube.expressions import parse_expression
-
-    dims = ({ k : d.copy() for k, d in dims.iteritems() }
-        if copy else dims)
+    # create variable dictionaries for each attribute
     G = { d.name: d.global_size for d in dims.itervalues() }
     L = { d.name: d.local_size for d in dims.itervalues() }
-    E0 = { d.name: d.extents[0] for d in dims.itervalues() }
-    E1 = { d.name: d.extents[1] for d in dims.itervalues() }
+    EL = { d.name: d.lower_extent for d in dims.itervalues() }
+    EU = { d.name: d.upper_extent for d in dims.itervalues() }
 
-    for n, d in dims.iteritems():
-        d[DimData.GLOBAL_SIZE] = parse_expression(d[DimData.GLOBAL_SIZE],
-            variables=G, expand=True)
-        d[DimData.LOCAL_SIZE] = parse_expression(d[DimData.LOCAL_SIZE],
-            variables=L, expand=True)
+    # Produce a dictionary of reified dimensions
+    rdims = { d.name : Dimension(name=d.name,
+        global_size=pe(d.global_size, variables=G, expand=True),
+        local_size=pe(d.local_size, variables=L, expand=True),
+        lower_extent=pe(d.lower_extent, variables=EL, expand=True),
+        upper_extent=pe(d.upper_extent, variables=EU, expand=True),
+        description=d.description, zero_valid=d.zero_valid)
+            for d in dims.itervalues() }
 
-        ext0 = parse_expression(d[DimData.EXTENTS][0],
-            variables=E0, expand=True)
-        ext1 = parse_expression(d[DimData.EXTENTS][1],
-            variables=E1, expand=True)
-
-        d[DimData.EXTENTS] = [ext0, ext1]
-
-        # Force a check of the dimension constraints at this point
+    # Validate reified dimensions
+    for d in rdims.itervalues():
         d.validate()
 
-    return dims
+    return rdims
 
 def reify_arrays(arrays, reified_dims, copy=True):
     """
@@ -91,7 +85,7 @@ def reify_arrays(arrays, reified_dims, copy=True):
         if copy else arrays)
 
     for n, a in arrays.iteritems():
-        a.shape = tuple(reified_dims[v][DimData.LOCAL_SIZE]
+        a.shape = tuple(reified_dims[v].local_size
             if isinstance(v, str) else v for v in a.shape)
 
     return arrays

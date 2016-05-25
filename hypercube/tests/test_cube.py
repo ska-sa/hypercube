@@ -60,14 +60,16 @@ class Test(unittest.TestCase):
         dims = cube.dimensions()
         self.assertTrue(dims['nvis'].global_size == nvis_expr)
         self.assertTrue(dims['nvis'].local_size == nvis_expr)
-        self.assertTrue(dims['nvis'].extents == (nvis_expr, nvis_expr))
+        self.assertTrue(dims['nvis'].lower_extent == nvis_expr)
+        self.assertTrue(dims['nvis'].upper_extent == nvis_expr)
 
         # Test that we now have concrete dimensions when
         # reification is requested
         dims = cube.dimensions(reify=True)
         self.assertTrue(dims['nvis'].global_size == nvis)
         self.assertTrue(dims['nvis'].local_size == nvis)
-        self.assertTrue(dims['nvis'].extents == (0, nvis))
+        self.assertTrue(dims['nvis'].lower_extent == 0)
+        self.assertTrue(dims['nvis'].upper_extent == nvis)
 
         # Reduce the local size of the ntime, na and nchan dimensions
         local_ntime = ntime//2
@@ -76,39 +78,41 @@ class Test(unittest.TestCase):
         local_nvis = local_ntime*local_nchan*local_na*(local_na-1)//2
 
         cube.update_dimension(name='ntime', local_size=local_ntime,
-            extents=[0,local_ntime], safety=False)
+            lower_extent=0, upper_extent=local_ntime)
         cube.update_dimension(name='na', local_size=local_na,
-            extents=[0,local_na], safety=False)
+            lower_extent=0, upper_extent=local_na)
         cube.update_dimension(name='nchan', local_size=local_nchan,
-            extents=[0,local_nchan], safety=False)
+            lower_extent=0, upper_extent=local_nchan)
 
         # Test that we now have concrete dimensions when
         # reification is requested
         dims = cube.dimensions(reify=True)
         self.assertTrue(dims['nvis'].global_size == nvis)
         self.assertTrue(dims['nvis'].local_size == local_nvis)
-        self.assertTrue(dims['nvis'].extents[0] == 0)
-        self.assertTrue(dims['nvis'].extents == (0, local_nvis))
+        self.assertTrue(dims['nvis'].lower_extent == 0)
+        self.assertTrue(dims['nvis'].upper_extent == local_nvis)
 
         # Test individual dimension retrieval
         dim = cube.dimension('nvis')
         self.assertTrue(dim.global_size == nvis_expr)
         self.assertTrue(dim.local_size == nvis_expr)
-        self.assertTrue(dim.extents == (nvis_expr, nvis_expr))
+        self.assertTrue(dim.lower_extent == nvis_expr)
+        self.assertTrue(dim.upper_extent == nvis_expr)
 
         # Test individual dimension reification
         dim = cube.dimension('nvis', reify=True)
         self.assertTrue(dim.global_size == nvis)
         self.assertTrue(dim.local_size == local_nvis)
-        self.assertTrue(dim.extents == (0, local_nvis))
+        self.assertTrue(dim.lower_extent == 0)
+        self.assertTrue(dim.upper_extent == local_nvis)
 
         # Test that we still have an abstract dimensions when
         # no reification is requested
         dims = cube.dimensions()
         self.assertTrue(dims['nvis'].global_size == nvis_expr)
         self.assertTrue(dims['nvis'].local_size == nvis_expr)
-        self.assertTrue(dims['nvis'].extents == (nvis_expr, nvis_expr))
-
+        self.assertTrue(dims['nvis'].lower_extent == nvis_expr)
+        self.assertTrue(dims['nvis'].upper_extent == nvis_expr)
 
     def test_array_registration_and_reification(self):
         """ Test array registration and reification """
@@ -142,7 +146,7 @@ class Test(unittest.TestCase):
         # Update the local size and extents of the time dimension
         local_ntime = ntime//2
         cube.update_dimension(name='ntime', local_size=local_ntime,
-            extents=[0,local_ntime], safety=False)
+            lower_extent=0, upper_extent=local_ntime)
 
         # Test that the concrete shape reflects the new local_size
         # after reifying the arrays
@@ -240,6 +244,16 @@ class Test(unittest.TestCase):
         self.assertTrue(_nchan == nchan)
         self.assertTrue(_nvis == nvis)
 
+        # Test that the mutiple argument form works
+        ((tl, tu), (al, au), (bl, bu),
+            (cl, cu), (vl, vu)) = cube.dim_extents(*args)
+
+        self.assertTrue(tl == 0 and tu == ntime)
+        self.assertTrue(bl == 0 and bu == nbl)
+        self.assertTrue(al == 0 and au == na)
+        self.assertTrue(cl == 0 and cu == nchan)
+        self.assertTrue(vl == 0 and vu == nvis)
+
         # Test that the multiple arguments packed into a string form works
         _ntime, _na, _nbl, _nchan, _nvis = cube.dim_global_size(','.join(args))
 
@@ -257,7 +271,7 @@ class Test(unittest.TestCase):
 
         for arg, ls in zip(args, values):
             cube.update_dimension(name=arg, local_size=ls,
-                extents=[0,ls], safety=False)
+                lower_extent=0, upper_extent=ls)
 
         # Test that the mutiple argument form works
         _ntime, _na, _nbl, _nchan, _nvis = cube.dim_local_size(*args)
@@ -308,7 +322,7 @@ class Test(unittest.TestCase):
         # Update local size of selected dimensions
         for arg, ls in zip(local_dims, values):
             cube.update_dimension(name=arg, local_size=ls,
-                extents=[0,ls], safety=False)
+                lower_extent=0, upper_extent=ls)
 
         # Check that local dimension query produces
         # the corrected derived sizes
