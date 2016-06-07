@@ -114,6 +114,38 @@ class Test(unittest.TestCase):
         self.assertTrue(dims['nvis'].lower_extent == nvis_expr)
         self.assertTrue(dims['nvis'].upper_extent == nvis_expr)
 
+    def test_dimension_updates(self):
+        """ Test dimension updates """
+        # Set up our problem size
+        ntime, na, nchan = 100, 64, 128
+
+        # Set up the hypercube dimensions
+        cube = hc.HyperCube()
+        cube.register_dimension('ntime', ntime)
+        cube.register_dimension('na', na)
+        cube.register_dimension('nchan', nchan)
+
+        tdim = cube.dimensions()['ntime']
+        self.assertTrue(tdim.global_size == tdim.local_size)
+
+        # Check that setting the global size greater than the local size succeeds
+        cube.update_dimension(name='ntime', global_size=120)
+        self.assertTrue(tdim.global_size == 120)
+
+        # Check that setting the global size less than the local size fails
+        with self.assertRaises(ValueError) as cm:
+            cube.update_dimension(name='ntime', global_size=80)
+
+        self.assertTrue('local size {nt}'.format(nt=ntime) in cm.exception.message)
+        self.assertTrue('global size {gs}'.format(gs=80) in cm.exception.message)
+
+        # Check that setting the global_size and local_size less than the upper_extent fails
+        with self.assertRaises(ValueError) as cm:
+            cube.update_dimension(name='ntime', global_size=80, local_size=80)
+
+        # This should succeed
+        cube.update_dimension(name='ntime', global_size=80, local_size=80, upper_extent=80)
+
     def test_array_registration_and_reification(self):
         """ Test array registration and reification """
         # Set up our problem size
