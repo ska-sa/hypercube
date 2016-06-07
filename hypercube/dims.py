@@ -140,7 +140,7 @@ class Dimension(object):
         if self.ignore_extents:
             return
 
-        if self.upper_extent - self.lower_extent > self.local_size:
+        if self.extent_size > self.local_size:
             raise ValueError("Dimension '{n}' "
                 "extent range [{el}, {eu}] ({r}) "
                 "is greater than it's local size {l}. "
