@@ -100,11 +100,12 @@ class Dimension(object):
     def ignore_extents(self):
         return self._ignore_extents
     
-    def update(self, local_size=None,
+    def update(self, global_size=None, local_size=None,
         lower_extent=None, upper_extent=None,
         description=None, zero_valid=None,
         ignore_extents=None):
 
+        self._global_size = global_size or self._global_size
         self._local_size = local_size or self._local_size
         self._lower_extent = lower_extent or self._lower_extent
         self._upper_extent = upper_extent or self._upper_extent
