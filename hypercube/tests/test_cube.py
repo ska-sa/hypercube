@@ -259,11 +259,11 @@ class Test(unittest.TestCase):
 
         # Create a cube and register some dimensions
         cube = hc.HyperCube()
-        cube.register_dimension('ntime', ntime)
-        cube.register_dimension('na', na)
-        cube.register_dimension('nchan', nchan)
-        cube.register_dimension('nbl', nbl)
-        cube.register_dimension('nvis', nvis)
+        cube.register_dimension('ntime', ntime, lower_extent=1)
+        cube.register_dimension('na', na, lower_extent=2)
+        cube.register_dimension('nchan', nchan, lower_extent=3)
+        cube.register_dimension('nbl', nbl, lower_extent=4)
+        cube.register_dimension('nvis', nvis, lower_extent=5)
 
         args = ['ntime','na','nbl','nchan','nvis']
 
@@ -276,15 +276,33 @@ class Test(unittest.TestCase):
         self.assertTrue(_nchan == nchan)
         self.assertTrue(_nvis == nvis)
 
-        # Test that the mutiple argument form works
+        # Test that the multiple argument form works
         ((tl, tu), (al, au), (bl, bu),
             (cl, cu), (vl, vu)) = cube.dim_extents(*args)
 
-        self.assertTrue(tl == 0 and tu == ntime)
-        self.assertTrue(bl == 0 and bu == nbl)
-        self.assertTrue(al == 0 and au == na)
-        self.assertTrue(cl == 0 and cu == nchan)
-        self.assertTrue(vl == 0 and vu == nvis)
+        self.assertTrue(tl == 1 and tu == ntime)
+        self.assertTrue(al == 2 and au == na)
+        self.assertTrue(cl == 3 and cu == nchan)
+        self.assertTrue(bl == 4 and bu == nbl)
+        self.assertTrue(vl == 5 and vu == nvis)
+
+        # Test that singleton argument form works
+        tl, tu = cube.dim_extents('ntime')
+
+        self.assertTrue(tl == 1 and tu == ntime)
+
+        # Test that the mutiple argument form works
+        _ntime, _na, _nbl, _nchan, _nvis = cube.dim_extent_size(*args)
+
+        self.assertTrue(_ntime == tu - tl)
+        self.assertTrue(_nbl == bu - bl)
+        self.assertTrue(_na == au - al)
+        self.assertTrue(_nchan == cu - cl)
+        self.assertTrue(_nvis == vu - vl)
+
+        # Test that singleton argument form works
+        _ntime = cube.dim_extent_size('ntime')
+        self.assertTrue(_ntime == tu - tl)
 
         # Test that the multiple arguments packed into a string form works
         _ntime, _na, _nbl, _nchan, _nvis = cube.dim_global_size(','.join(args))

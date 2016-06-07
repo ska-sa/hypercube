@@ -268,10 +268,20 @@ class HyperCube(object):
         l = self.dim_lower_extent(*args)
         u = self.dim_upper_extent(*args)
 
+        # Handle sequence and singletons differently
         if isinstance(l, collections.Sequence):
             return zip(l, u)
         else:
             return (l, u)
+
+    def dim_extent_size(self, *args):
+        extents = self.dim_extents(*args)
+
+        # Handle tuples and sequences differently
+        if isinstance(extents, tuple):
+            return extents[1] - extents[0]
+        else: # isinstance(extents, collections.Sequence):
+            return (u-l for l, u in extents)
 
     def register_array(self, name, shape, dtype, **kwargs):
         """
