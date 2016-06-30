@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+from weakref import WeakKeyDictionary
+
 import functools
 
 import numpy as np
@@ -25,17 +27,17 @@ import numpy as np
 class ArrayDescriptor(object):
     """ Descriptor class for arrays """
     def __init__(self, name):
+        self.data = WeakKeyDictionary()
         self.name = name
-        self.data = None
 
     def __get__(self, instance, owner):
-        return self.data
+        return self.data[instance]
 
     def __set__(self, instance, value):
-        self.data = value
+        self.data[instance] = value
 
     def __delete__(self, instance):
-        del self.data
+        del self.data[instance]
 
 def gpuarray_factory(shape, dtype):
     import pycuda.gpuarray as gpuarray
@@ -48,7 +50,7 @@ def generic_stitch(cube, arrays):
     """
     
     for name, ary in arrays.iteritems():
-        if name not in cube.__dict__:
+        if name not in type(cube).__dict__:
             setattr(type(cube), name, ArrayDescriptor(name))
 
         setattr(cube, name, ary)
