@@ -19,18 +19,21 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import numpy as np
+import itertools
 import types
-
 from weakref import WeakKeyDictionary
+
+import numpy as np
 from attrdict import AttrDict
+from tabulate import tabulate
 
 from hypercube.dims import create_dimension
 from hypercube.expressions import (expand_expression_map,
     parse_expression as pe)
 import hypercube.util as hcu
 
-from tabulate import tabulate
+LOCAL_SIZE = 'local_size'
+GLOBAL_SIZE = 'global_size'
 
 class PropertyDescriptor(object):
     """ Descriptor class for properties """
@@ -122,7 +125,7 @@ class HyperCube(object):
 
         return D
 
-    def register_dimensions(self, dim_list):
+    def register_dimensions(self, dims):
         """
         >>> slvr.register_dimensions([
             {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
@@ -130,18 +133,25 @@ class HyperCube(object):
             ])
         """
 
-        for dim in dim_list:
+        if isinstance(dims, collections.Mapping):
+            dims = dims.itervalues()
+
+        for dim in dims:
             self.register_dimension(dim.name, dim)
 
-    def update_dimensions(self, dim_list):
+    def update_dimensions(self, dims):
         """
         >>> slvr.update_dimensions([
             {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
             {'name' : 'na', 'local_size' : 3, 'extents' : [2, 7]},
             ])
         """
-        for dim_data in dim_list:
-            self.update_dimension(**dim_data)
+
+        if isinstance(dims, collections.Mapping):
+            dims = dims.itervalues()
+
+        for dim in dims:
+            self.update_dimension(**dim)
 
 
     def update_dimension(self, name, **update_dict):
@@ -311,7 +321,7 @@ class HyperCube(object):
 
         return A
 
-    def register_arrays(self, array_list):
+    def register_arrays(self, arrays):
         """
         Register arrays using a list of dictionaries defining the arrays.
 
@@ -322,7 +332,11 @@ class HyperCube(object):
             { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }
         ]
         """
-        for ary in array_list:
+
+        if isinstance(arrays, collections.Mapping):
+            arrays = arrays.itervalues()
+
+        for ary in arrays:
             self.register_array(**ary)
 
     def register_property(self, name, dtype, default, **kwargs):
@@ -536,3 +550,212 @@ class HyperCube(object):
             result += "Registered Properties:\n%s\n\n" % (tabulate(table, headers=headers),)
 
         return result
+
+    def endpoint_iter(self, *dim_strides, **kwargs):
+        """
+        Recursively iterate over the (dimension, stride)
+        tuples specified in dim_strides, returning the start
+        and end indices for each chunk.
+
+        For example, the following call effectively produces
+        2 loops over the 'ntime' and 'nchan' dimensions
+        in chunks of 10 and 4 respectively.
+
+        >>> for (ts, te), (cs, ce) in cube.endpoint_iter(('ntime', 10), ('nchan', 4))
+        >>>     print 'Time range [{ts},{te}] Channel Range [{cs},{ce}]'.format(
+        >>>         ts=ts, te=te, cs=cs, ce=ce)
+
+        Arguments:
+            dim_strides: list
+                list of (dimension, stride) tuples
+
+        Keyword Arguments:
+            reified_dims: dict
+                dictionary of reified dimensions, exists to avoid
+                multiple reificiation operations
+            scope: string
+                Governs whether iteration occurs over the global or
+                local dimension space. Defaults to 'local_size', but
+                can also be 'global_size'.
+
+        Returns:
+            An iterator 
+        """
+
+        def _dim_endpoints(size, stride):
+            return ((i, min(i+stride, size)) for i in xrange(0, size, stride))
+
+        rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
+        scope = kwargs.get('scope', LOCAL_SIZE)
+        gens = (_dim_endpoints(getattr(rdims[d], scope), s) for d, s in dim_strides)
+        return itertools.product(*gens)
+
+    def slice_iter(self, *dim_strides, **kwargs):
+        """
+        Recursively iterate over the (dimension, stride)
+        tuples specified in dim_strides, returning the chunk
+        start offsets for each specified dimensions.
+
+        For example, the following call effectively produces
+        2 loops over the 'ntime' and 'nchan' dimensions
+        in chunks of 10 and 4 respectively.
+
+        >>> A = np.ones(size=(100, 4))
+        >>> for ts, cs in cube.endpoint_iter(('ntime', 10), ('nchan', 4))
+        >>>     A[ts, cs].sum()
+        >>>
+        >>> for i cube.endpoint_iter(('ntime', 10), ('nchan', 4))
+        >>>     A[i].sum()
+
+        Arguments:
+            dim_strides: list
+                list of (dimension, stride) tuples
+
+        Keyword Arguments:
+            reified_dims: dict
+                dictionary of reified dimensions, exists to avoid
+                multiple reificiation operations
+            scope: string
+                Governs whether iteration occurs over the global or
+                local dimension space. Defaults to 'local_size', but
+                can also be 'global_size'.
+
+        Returns:
+            An iterator 
+        """
+        def _create_slices(*args):
+            return tuple(slice(s,e,1) for (s, e) in args)
+
+        return (_create_slices(*s) for s in self.endpoint_iter(
+            *dim_strides, **kwargs))
+
+    def dim_iter(self, *dim_strides, **kwargs):
+        """
+        Recursively iterate over the (dimension, stride)
+        tuples specified in dim_strides, returning a tuple
+        of dictionaries describing a dimension update.
+
+        For example, the following call effectively produces
+        2 loops over the 'ntime' and 'nchan' dimensions
+        in chunks of 10 and 4 respectively.
+
+        >>> for d in cube.dim_iter(('ntime', 10), ('nchan', 4))
+        >>>     cube.update_dimensions(d)
+
+        Arguments:
+            dim_strides: list
+                list of (dimension, stride) tuples
+
+        Keyword Arguments:
+            reified_dims: dict
+                dictionary of reified dimensions, exists to avoid
+                multiple reificiation operations
+            scope: string
+                Governs whether iteration occurs over the global or
+                local dimension space. Defaults to 'local_size', but
+                can also be 'global_size'.
+
+        Returns:
+            An iterator 
+        """
+
+        # Extract dimension names
+        dims = [ds[0] for ds in dim_strides]
+
+        def _create_dim_dicts(*args):
+            return tuple({ 'name': d, 'lower_extent': s, 'upper_extent': e }
+                for (d, (s, e)) in args)
+
+        # Return a tuple-dict-creating generator
+        return (_create_dim_dicts(*zip(dims, s)) for s in self.endpoint_iter(
+            *dim_strides, **kwargs))
+
+    def cube_iter(self, *dim_strides, **kwargs):
+        """
+        Recursively iterate over the (dimension, stride)
+        tuples specified in dim_strides, returning cloned hypercubes
+        with each of the specified dimensions modified accordingly.
+
+        For example, the following call effectively produces
+        2 loops over the 'ntime' and 'nchan' dimensions
+        in chunks of 10 and 4 respectively.
+
+        >>> A = np.ones(size=(100, 4))
+        >>> for c in cube.cube_iter(('ntime', 10), ('nchan', 4))
+        >>>     assert c.dim_local_size('ntime', 'nchan') == (10, 4)
+
+        Arguments:
+            dim_strides: list
+                list of (dimension, stride) tuples
+
+        Keyword Arguments:
+            reified_dims: dict
+                dictionary of reified dimensions, exists to avoid
+                multiple reificiation operations
+            scope: string
+                Governs whether iteration occurs over the global or
+                local dimension space. Defaults to 'local_size', but
+                can also be 'global_size'.
+
+        Returns:
+            An iterator 
+
+        """
+        def _make_cube(rdims, arrays, *args):
+            """
+            Create a hypercube given reified dimensions and a list of
+            (dim_name, dim_slice) tuples
+            """
+
+            # Create new hypercube, registering everything in rdims
+            cube = HyperCube()
+            cube.register_dimensions(rdims)
+            cube.register_arrays(arrays)
+
+            # Now update dimensions given slice information
+            for (d, (s, e)) in args:
+                cube.update_dimension(name=d, local_size=rdims[d].local_size,
+                    lower_extent=s, upper_extent=e,
+                    global_size=rdims[d].global_size)
+
+            return cube
+
+        # Extract dimension names
+        dims = [ds[0] for ds in dim_strides]
+        rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
+        arrays = (hcu.reify_arrays(self.arrays(), rdims) 
+            if kwargs.get('arrays', False) else {})
+
+        # Return a cube-creating generator
+        return (_make_cube(rdims, arrays, *zip(dims, s)) for s
+            in self.endpoint_iter(*dim_strides, reified_dims=rdims, **kwargs))
+
+    def slice_index(self, *dims, **kwargs):
+        """
+        Returns a tuple of slices, each slice corresponding to the
+        dimensions supplied in dims
+
+        e.g.
+        >>> A = np.ones(ntime, na)
+        >>> idx = cube.slice_index('ntime','na')
+        >>> A[idx].sum()
+        >>> ntime, na = cube.slice_index('ntime', 'na')
+        >>> A[ntime, na].sum()
+
+
+        Arguments:
+            dims: list
+                list of dimensions which should have slice
+                objects returned.
+
+        Keyword Arguments:
+            reified_dims: dict
+                dictionary of reified dimensions, exists to avoid
+                multiple reificiation operations
+
+        Returns:
+            A tuple containing slices for each dimension in dims
+        """
+        rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
+        return tuple(slice(rdims[d].lower_extent, rdims[d].upper_extent, 1)
+            for d in dims)
