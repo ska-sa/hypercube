@@ -51,7 +51,7 @@ setup(name='hypercube',
     version=get_version(),
     description='Actually an n-orthotope.',
     long_description=readme(),
-    url='http://github.com/ska-sa/montblanc',
+    url='http://github.com/ska-sa/hypercube',
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

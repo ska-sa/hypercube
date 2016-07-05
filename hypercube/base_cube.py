@@ -161,11 +161,9 @@ class HyperCube(object):
 
         # Sanity check dimension existence
         if not dim:
-            montblanc.log.warn("'Dimension {n}' cannot be updated as it "
+            raise ValueError("'Dimension {n}' cannot be updated as it "
                 "is not registered in the dimension dictionary."
                     .format(n=name))
-
-            return
 
         dim.update(**update_dict)
 
