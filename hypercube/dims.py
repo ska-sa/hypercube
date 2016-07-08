@@ -105,10 +105,10 @@ class Dimension(object):
         description=None, zero_valid=None,
         ignore_extents=None):
 
-        self._global_size = global_size or self._global_size
-        self._local_size = local_size or self._local_size
-        self._lower_extent = lower_extent or self._lower_extent
-        self._upper_extent = upper_extent or self._upper_extent
+        self._global_size = self._global_size if global_size is None else global_size
+        self._local_size = self._local_size if local_size is None else local_size
+        self._lower_extent = self._lower_extent if lower_extent is None else lower_extent
+        self._upper_extent = self._upper_extent if upper_extent is None else upper_extent
         self._description = description or self._description
         self._zero_valid = zero_valid or self._zero_valid
         self._ignore_extents = ignore_extents or self._ignore_extents
