@@ -474,37 +474,32 @@ class Test(unittest.TestCase):
 
         # Test that iterating over offsets works
         S = sum(A[ts:te,as_:ae].sum() for (ts, te), (as_, ae) in
-            cube.endpoint_iter(('ntime', tsize), ('na', asize),
-            scope='global_size'))
+            cube.endpoint_iter(('ntime', tsize), ('na', asize)))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over tuple indices works
         S = sum(A[i].sum() for i in
-            cube.slice_iter(('ntime', tsize), ('na', asize),
-            scope='global_size'))
+            cube.slice_iter(('ntime', tsize), ('na', asize)))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over destructured tuple indices works
         S = sum(A[t,a].sum() for t, a in
-            cube.slice_iter(('ntime', tsize), ('na', asize),
-            scope='global_size'))
+            cube.slice_iter(('ntime', tsize), ('na', asize)))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over hypercubes works
         S = sum(A[c.slice_index('ntime', 'na')].sum() for c in
-            cube.cube_iter(('ntime', tsize), ('na', asize),
-            scope='global_size'))
+            cube.cube_iter(('ntime', tsize), ('na', asize)))
         self.assertTrue(S == A_sum)
 
         # Test that arrays aren't copied over by default
-        for c in cube.cube_iter(('ntime', tsize), ('na', asize),
-            scope='global_size'):
+        for c in cube.cube_iter(('ntime', tsize), ('na', asize)):
             self.assertTrue('uvw' not in c.arrays().keys())
             break
 
         # Test that arrays aren't copied over when requested
         for c in cube.cube_iter(('ntime', tsize), ('na', asize),
-            scope='global_size', arrays=True):
+            arrays=True):
             self.assertTrue('uvw' in c.arrays().keys())
             break
 
@@ -534,31 +529,71 @@ class Test(unittest.TestCase):
 
         # Test that iterating over offsets works
         S = sum(A[ts:te,as_:ae].sum() for (ts, te), (as_, ae) in
-            cube.endpoint_iter(('ntime', tsize), ('na', asize)))
+            cube.endpoint_iter(('ntime', tsize), ('na', asize),
+            scope='local_size'))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over tuple indices works
         S = sum(A[i].sum() for i in
-            cube.slice_iter(('ntime', tsize), ('na', asize)))
+            cube.slice_iter(('ntime', tsize), ('na', asize),
+            scope='local_size'))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over destructured tuple indices works
         S = sum(A[t,a].sum() for t, a in
-            cube.slice_iter(('ntime', tsize), ('na', asize)))
+            cube.slice_iter(('ntime', tsize), ('na', asize),
+            scope='local_size'))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over hypercubes works
         S = sum(A[c.slice_index('ntime', 'na')].sum() for c in
-            cube.cube_iter(('ntime', tsize), ('na', asize)))
+            cube.cube_iter(('ntime', tsize), ('na', asize),
+            scope='local_size'))
         self.assertTrue(S == A_sum)
 
         # Test that iterating over dimension dictionaries works
         S = 0
-        for d in cube.dim_iter(('ntime', tsize), ('na', asize)):
+        for d in cube.dim_iter(('ntime', tsize), ('na', asize),
+            scope='local_size'):
             cube.update_dimensions(d)
             S += A[cube.slice_index('ntime', 'na')].sum()
 
         self.assertTrue(S == A_sum)
+
+        # Test that we can iterate over a dimension's local size
+        cube.update_dimension(name='ntime', global_size=ntime,
+            local_size=ntime, lower_extent=0, upper_extent=ntime)
+
+        cube.update_dimension(name='na', global_size=na,
+            local_size=na, lower_extent=0, upper_extent=na)
+
+        A_sum = A.sum()
+
+        # Test that 'local_size' matches 'global_size' in the default case
+        S = 0
+        for d in cube.dim_iter(('ntime', tsize), ('na', asize),
+            scope='global_size'):
+            cube.update_dimensions(d)
+            local_size = cube.dim_local_size('ntime', 'na')
+            global_size = cube.dim_global_size('ntime', 'na')
+            self.assertTrue(local_size == global_size)
+            S += A[cube.slice_index('ntime', 'na')].sum()
+
+        self.assertTrue(S == A_sum)
+
+        # Test that the dictionary d updates
+        # a dimension's 'local_size'
+        S = 0
+        for d in cube.dim_iter(('ntime', tsize), ('na', asize),
+            scope='global_size', update_local_size=True):
+            cube.update_dimensions(d)
+            local_size = cube.dim_local_size('ntime', 'na')
+            global_size = cube.dim_global_size('ntime', 'na')
+            self.assertTrue(local_size != global_size)
+            S += A[cube.slice_index('ntime', 'na')].sum()
+
+        self.assertTrue(S == A_sum)
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)

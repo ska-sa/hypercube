@@ -575,8 +575,8 @@ class HyperCube(object):
                 multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'local_size', but
-                can also be 'global_size'.
+                local dimension space. Defaults to 'global_size', but
+                can also be 'local_size'.
 
         Returns:
             An iterator 
@@ -586,7 +586,7 @@ class HyperCube(object):
             return ((i, min(i+stride, size)) for i in xrange(0, size, stride))
 
         rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
-        scope = kwargs.get('scope', LOCAL_SIZE)
+        scope = kwargs.get('scope', GLOBAL_SIZE)
         gens = (_dim_endpoints(getattr(rdims[d], scope), s) for d, s in dim_strides)
         return itertools.product(*gens)
 
@@ -617,8 +617,8 @@ class HyperCube(object):
                 multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'local_size', but
-                can also be 'global_size'.
+                local dimension space. Defaults to 'global_size', but
+                can also be 'local_size'.
 
         Returns:
             An iterator 
@@ -652,8 +652,12 @@ class HyperCube(object):
                 multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'local_size', but
-                can also be 'global_size'.
+                local dimension space. Defaults to 'global_size', but
+                can also be 'local_size'.
+            update_local_size : boolean
+                If True and scope is 'global_size', the returned dictionaries
+                will contain a 'local_size' key, set to the difference of
+                the lower and upper extents
 
         Returns:
             An iterator 
@@ -663,12 +667,25 @@ class HyperCube(object):
         dims = [ds[0] for ds in dim_strides]
 
         def _create_dim_dicts(*args):
-            return tuple({ 'name': d, 'lower_extent': s, 'upper_extent': e }
+            return tuple({ 'name': d,
+                'lower_extent': s, 'upper_extent': e }
                 for (d, (s, e)) in args)
 
+        def _create_dim_dicts_with_local(*args):
+            return tuple({ 'name': d, 'local_size' : e - s,
+                'lower_extent': s, 'upper_extent': e }
+                for (d, (s, e)) in args)
+
+        is_scope_global = kwargs.get('scope', GLOBAL_SIZE) == GLOBAL_SIZE
+        local_update_requested = kwargs.get('update_local_size', False)
+
         # Return a tuple-dict-creating generator
-        return (_create_dim_dicts(*zip(dims, s)) for s in self.endpoint_iter(
-            *dim_strides, **kwargs))
+        if is_scope_global and local_update_requested:
+            return (_create_dim_dicts_with_local(*zip(dims, s)) for s
+                in self.endpoint_iter(*dim_strides, **kwargs))
+        else:
+            return (_create_dim_dicts(*zip(dims, s)) for s
+                in self.endpoint_iter(*dim_strides, **kwargs))
 
     def cube_iter(self, *dim_strides, **kwargs):
         """
@@ -694,8 +711,8 @@ class HyperCube(object):
                 multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'local_size', but
-                can also be 'global_size'.
+                local dimension space. Defaults to 'global_size', but
+                can also be 'local_size'.
 
         Returns:
             An iterator 
