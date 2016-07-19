@@ -51,18 +51,33 @@ class Dimension(object):
         def _is_extent_expr(l, u):
             return isinstance(l, str) or isinstance(u, str)
 
+        if lower_extent is None:
+            lower_extent = (global_size if
+                isinstance(global_size, str) else 0)
+
+        if upper_extent is None:
+            upper_extent = global_size
+
+        if local_size is None:
+            local_size = global_size
+
+        if description is None:
+            description = DEFAULT_DESCRIPTION
+
+        if ignore_extents is None:
+            if _is_extent_expr(lower_extent, upper_extent):
+                ignore_extents = True
+            else:
+                ignore_extents = False
+
         self._name = name
         self._global_size = global_size
-        self._local_size = local_size or global_size
-        self._lower_extent = lower_extent or (global_size
-                if isinstance(global_size, str) else 0)
-        self._upper_extent = upper_extent or global_size
-        self._description = description or DEFAULT_DESCRIPTION
+        self._local_size = local_size
+        self._lower_extent = lower_extent
+        self._upper_extent = upper_extent
+        self._description = description
         self._zero_valid = zero_valid
-
-        self._ignore_extents = (ignore_extents if ignore_extents is not None
-            else (True if _is_extent_expr(self.lower_extent, self.upper_extent)
-                else False))
+        self._ignore_extents = ignore_extents
 
     @property
     def name(self):
@@ -105,13 +120,13 @@ class Dimension(object):
         description=None, zero_valid=None,
         ignore_extents=None):
 
-        self._global_size = self._global_size if global_size is None else global_size
-        self._local_size = self._local_size if local_size is None else local_size
-        self._lower_extent = self._lower_extent if lower_extent is None else lower_extent
-        self._upper_extent = self._upper_extent if upper_extent is None else upper_extent
-        self._description = description or self._description
-        self._zero_valid = zero_valid or self._zero_valid
-        self._ignore_extents = ignore_extents or self._ignore_extents
+        if global_size is not None: self._global_size = global_size
+        if local_size is not None: self._local_size = local_size
+        if lower_extent is not None: self._lower_extent = lower_extent
+        if upper_extent is not None: self._upper_extent = upper_extent
+        if description is not None: self._description = description
+        if zero_valid is not None: self._zero_valid = zero_valid
+        if ignore_extents is not None: self._ignore_extents = ignore_extents
 
         # Check that we've been given valid values
         self.validate()
@@ -141,7 +156,7 @@ class Dimension(object):
             return
 
         if self.extent_size > self.local_size:
-            raise ValueError("Dimension '{n}' "
+            msg = ("Dimension '{n}' "
                 "extent range [{el}, {eu}] ({r}) "
                 "is greater than it's local size {l}. "
                 "If this dimension is defined as "
@@ -153,7 +168,9 @@ class Dimension(object):
                 "creating this dimension.".format(
                     n=self.name, l=self.local_size,
                     el=self.lower_extent, eu=self.upper_extent,
-                    r=self.upper_extent - self.lower_extent))
+                    r=self.extent_size))
+
+            raise ValueError(msg)
 
         if self.zero_valid:
             assert (0 <= self.lower_extent <= self.upper_extent
