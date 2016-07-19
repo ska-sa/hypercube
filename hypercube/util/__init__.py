@@ -56,15 +56,15 @@ def reify_dims(dims):
     """
 
     # create variable dictionaries for each attribute
-    G = { d.name: d.global_size for d in dims.itervalues() }
-    L = { d.name: d.local_size for d in dims.itervalues() }
+    GS = { d.name: d.global_size for d in dims.itervalues() }
+    LS = { d.name: d.local_size for d in dims.itervalues() }
     EL = { d.name: d.lower_extent for d in dims.itervalues() }
     EU = { d.name: d.upper_extent for d in dims.itervalues() }
 
     # Produce a dictionary of reified dimensions
     rdims = { d.name : Dimension(name=d.name,
-        global_size=pe(d.global_size, variables=G, expand=True),
-        local_size=pe(d.local_size, variables=L, expand=True),
+        global_size=pe(d.global_size, variables=GS, expand=True),
+        local_size=pe(d.local_size, variables=LS, expand=True),
         lower_extent=pe(d.lower_extent, variables=EL, expand=True),
         upper_extent=pe(d.upper_extent, variables=EU, expand=True),
         description=d.description,
