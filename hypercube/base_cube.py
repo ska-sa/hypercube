@@ -583,7 +583,8 @@ class HyperCube(object):
         """
 
         def _dim_endpoints(size, stride):
-            return ((i, min(i+stride, size)) for i in xrange(0, size, stride))
+            r = xrange(0, size, stride) if stride > 0 else xrange(0, size)
+            return ((i, min(i+stride, size)) for i in r)
 
         rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
         scope = kwargs.get('scope', GLOBAL_SIZE)
