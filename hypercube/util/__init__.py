@@ -22,7 +22,6 @@ from attrdict import AttrDict
 import numpy as np
 
 from hypercube.dims import Dimension
-from hypercube.expressions import parse_expression as pe
 
 def array_bytes(array):
     """ Estimates the memory of the supplied array in bytes """
@@ -49,45 +48,16 @@ def setter_name(name):
     """ Constructs a name for the property, based on the property name """
     return 'set_' + name
 
-
-def reify_dims(dims):
+def reify_arrays(arrays, dims, copy=True):
     """
-    Returns a reified copy of dims
-    """
-
-    # create variable dictionaries for each attribute
-    GS = { d.name: d.global_size for d in dims.itervalues() }
-    LS = { d.name: d.local_size for d in dims.itervalues() }
-    EL = { d.name: d.lower_extent for d in dims.itervalues() }
-    EU = { d.name: d.upper_extent for d in dims.itervalues() }
-
-    # Produce a dictionary of reified dimensions
-    rdims = { d.name : Dimension(name=d.name,
-        global_size=pe(d.global_size, variables=GS, expand=True),
-        local_size=pe(d.local_size, variables=LS, expand=True),
-        lower_extent=pe(d.lower_extent, variables=EL, expand=True),
-        upper_extent=pe(d.upper_extent, variables=EU, expand=True),
-        description=d.description,
-        ignore_extents=d.ignore_extents,
-        zero_valid=d.zero_valid)
-            for d in dims.itervalues() }
-
-    # Validate reified dimensions
-    for d in rdims.itervalues():
-        d.validate()
-
-    return rdims
-
-def reify_arrays(arrays, reified_dims, copy=True):
-    """
-    Reify arrays, given the supplied reified dimensions. If copy is True,
+    Reify arrays, given the supplied dimensions. If copy is True,
     returns a copy of arrays else performs this inplace.
     """
     arrays = ({ k : AttrDict(**a) for k, a in arrays.iteritems() }
         if copy else arrays)
 
     for n, a in arrays.iteritems():
-        a.shape = tuple(reified_dims[v].local_size
+        a.shape = tuple(dims[v].local_size
             if isinstance(v, str) else v for v in a.shape)
 
     return arrays

@@ -28,8 +28,6 @@ from attrdict import AttrDict
 from tabulate import tabulate
 
 from hypercube.dims import create_dimension
-from hypercube.expressions import (expand_expression_map,
-    parse_expression as pe)
 import hypercube.util as hcu
 
 LOCAL_SIZE = 'local_size'
@@ -195,38 +193,28 @@ class HyperCube(object):
         if len(args) == 1 and isinstance(args[0], str):
             args = (s.strip() for s in re.split(',|:|;| ', args[0]))
 
-        # Create a variable template from this attribute
-        # for use in parse_expressions below
-        T = { d.name: getattr(d, attr) for d in self._dims.itervalues() }
-
         # Now get the specific attribute for each argument, parsing
         # any string expressions on the way
-        result = [pe(getattr(self._dims[name], attr),
-                variables=T, expand=True)
-            for name in args]
+        result = [getattr(self._dims[name], attr) for name in args]
 
         # Return single element if length one else entire list
         return result[0] if len(result) == 1 else result
 
-    def dim_global_size_dict(self, reify=True):
+    def dim_global_size_dict(self):
         """ Returns a mapping of dimension name to global size """
-        D = { d.name: d.global_size for d in self._dims.itervalues()}
-        return expand_expression_map(D) if reify else D
+        return { d.name: d.global_size for d in self._dims.itervalues()}
 
-    def dim_local_size_dict(self, reify=True):
+    def dim_local_size_dict(self):
         """ Returns a mapping of dimension name to local size """
-        D = { d.name: d.local_size for d in self._dims.itervalues()}
-        return expand_expression_map(D) if reify else D
+        return { d.name: d.local_size for d in self._dims.itervalues()}
 
-    def dim_lower_extent_dict(self, reify=True):
+    def dim_lower_extent_dict(self):
         """ Returns a mapping of dimension name to lower_extent """
-        D = { d.name: d.lower_extent for d in self._dims.itervalues()}
-        return expand_expression_map(D) if reify else D
+        return { d.name: d.lower_extent for d in self._dims.itervalues()}
 
-    def dim_upper_extent_dict(self, reify=True):
+    def dim_upper_extent_dict(self):
         """ Returns a mapping of dimension name to upper_extent """
-        D = { d.name: d.upper_extent for d in self._dims.itervalues()}
-        return expand_expression_map(D) if reify else D
+        return { d.name: d.upper_extent for d in self._dims.itervalues()}
 
     def dim_global_size(self, *args):
         """
@@ -435,16 +423,13 @@ class HyperCube(object):
         the local_size of the dimension.
         """
         return (self._arrays if not reify else
-            hcu.reify_arrays(self._arrays, self.dimensions(reify=True)))
+            hcu.reify_arrays(self._arrays, self.dimensions(copy=False)))
 
     def array(self, name, reify=False):
         """
         Returns an array object. If reify is True,
         it will replace any dimension within the array shape with
         the local_size of the dimension.
-
-        Reifying arrays "individually" is expensive since, in practice,
-        all dimensions must be reified to handle dependent expressions.
         """
 
         # Complain if the array doesn't exist
@@ -457,99 +442,114 @@ class HyperCube(object):
             return self._arrays[name]
 
         return hcu.reify_arrays({name : self._arrays[name]},
-            self.dimensions(reify=True))[name]
+            self.dimensions(copy=False))[name]
 
-    def dimensions(self, reify=False, copy=True):
+    def dimensions(self, copy=True):
         """
         Return a dictionary of dimensions
 
         Keyword Arguments
         -----------------
-            reify : boolean
-                if True, converts any expressions in the dimension
-                information to integers.
+            copy : boolean
+                Returns a copy if True.
         """
 
-        return hcu.reify_dims(self._dims) if reify else self._dims
+        return self._dims.copy() if copy else self._dims
 
-    def dimension(self, name, reify=False):
+    def dimension(self, name):
         """
-        Returns a dimension object.
-
-        Reifying dimensions "individually" is expensive since, in practice,
-        all dimensions must be reified to handle dependent expressions.
+        Returns the specified dimension object.
         """
-        # Complain if the array doesn't exist
-        if name not in self._dims:
-            raise KeyError("Dimension '{n}' is not registered on this solver"
-                .format(n=name))
 
-        # Just return the array if we're not reifying
-        if not reify:
+        try:
             return self._dims[name]
-
-        # Reifies everything just to get this dimension, expensive
-        return hcu.reify_dims(self._dims)[name]
+        except KeyError:
+            raise KeyError("Dimension '{n}' is not registered "
+                            "on this solver".format(n=name))
 
     def gen_dimension_table(self):
-        """ 2D array describing each registered dimension together with headers - for use in __str__ """
-        headers = ['Dimension Name', 'Description', 'Global Size', 'Local Size', 'Extents']
+        """
+        2D array describing each registered dimension
+        together with headers - for use in __str__
+        """
+        headers = ['Dimension Name', 'Description',
+            'Global Size', 'Local Size', 'Extents']
 
         table = []
-        for dimval in sorted(self.dimensions(reify=True).itervalues(),
+        for dimval in sorted(self.dimensions(copy=False).itervalues(),
                              key=lambda dval: dval.name.upper()):
-            table.append([dimval.name, dimval.description, dimval.global_size, dimval.local_size, (dimval.lower_extent, dimval.upper_extent)])
+            
+            table.append([dimval.name,
+                dimval.description,
+                dimval.global_size,
+                dimval.local_size,
+                (dimval.lower_extent, dimval.upper_extent)])
+
         return table, headers
 
     def gen_array_table(self):
-        """ 2D array describing each registered array together with headers - for use in __str__ """
+        """
+        2D array describing each registered array
+        together with headers - for use in __str__
+        """
         headers = ['Array Name', 'Size', 'Type', 'Shape']
 
         # Reify arrays to work out their actual size
         reified_arrays = self.arrays(reify=True)
 
         table = []
-        for arrval in sorted(self.arrays().itervalues(),
+        for arrval in sorted(reified_arrays.itervalues(),
                              key=lambda aval: aval.name.upper()):
             # Get the actual size of the array
             nbytes = hcu.array_bytes(reified_arrays[arrval.name])
             # Print shape tuples without spaces and single quotes
             sshape = '(%s)' % (','.join(map(str, arrval.shape)),)
-            table.append([arrval.name, hcu.fmt_bytes(nbytes), np.dtype(arrval.dtype).name, sshape])
+            table.append([arrval.name,
+                hcu.fmt_bytes(nbytes),
+                np.dtype(arrval.dtype).name,
+                sshape])
+
         return table, headers
 
     def gen_property_table(self):
-        """ 2D array describing each registered property together with headers - for use in __str__ """
+        """
+        2D array describing each registered property
+        together with headers - for use in __str__
+        """
         headers = ['Property Name', 'Type', 'Value', 'Default Value']
 
         table = []
         for propval in sorted(self._properties.itervalues(),
                               key=lambda pval: pval.name.upper()):
-            table.append([propval.name, np.dtype(propval.dtype).name, getattr(self, propval.name), propval.default])
+            table.append([propval.name,
+                np.dtype(propval.dtype).name,
+                getattr(self, propval.name),
+                propval.default])
+
         return table, headers
 
     def __str__(self):
         """ Outputs a string representation of this object """
 
-        result = ''
+        result = []
 
         if len(self._dims) > 0:
             table, headers = self.gen_dimension_table()
-            assert headers == ['Dimension Name', 'Description', 'Global Size', 'Local Size', 'Extents']
-            result += "Registered Dimensions:\n%s\n\n" % (tabulate(table, headers=headers),)
+            result.append("Registered Dimensions:\n%s\n\n" % (
+                tabulate(table, headers=headers),))
 
         if len(self._arrays) > 0:
             table, headers = self.gen_array_table()
             table.append(['Local Memory Usage', self.mem_required(), '', ''])
-            assert headers == ['Array Name', 'Size', 'Type', 'Shape']
-            result += "Registered Arrays:\n%s\n\n" % (tabulate(table, headers=headers),)
+            result.append("Registered Arrays:\n%s\n\n" % (
+                tabulate(table, headers=headers),))
 
         if len(self._properties) > 0:
             table, headers = self.gen_property_table()
-            assert headers == ['Property Name', 'Type', 'Value', 'Default Value']
-            result += "Registered Properties:\n%s\n\n" % (tabulate(table, headers=headers),)
+            result.append("Registered Properties:\n%s\n\n" % (tabulate(
+                table, headers=headers),))
 
-        return result
+        return ''.join(result)
 
     def endpoint_iter(self, *dim_strides, **kwargs):
         """
@@ -570,9 +570,6 @@ class HyperCube(object):
                 list of (dimension, stride) tuples
 
         Keyword Arguments:
-            reified_dims: dict
-                dictionary of reified dimensions, exists to avoid
-                multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
                 local dimension space. Defaults to 'global_size', but
@@ -586,9 +583,9 @@ class HyperCube(object):
             r = xrange(0, size, stride) if stride > 0 else xrange(0, size)
             return ((i, min(i+stride, size)) for i in r)
 
-        rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
+        dims = self.dimensions(copy=False)
         scope = kwargs.get('scope', GLOBAL_SIZE)
-        gens = (_dim_endpoints(getattr(rdims[d], scope), s) for d, s in dim_strides)
+        gens = (_dim_endpoints(getattr(dims[d], scope), s) for d, s in dim_strides)
         return itertools.product(*gens)
 
     def slice_iter(self, *dim_strides, **kwargs):
@@ -613,9 +610,6 @@ class HyperCube(object):
                 list of (dimension, stride) tuples
 
         Keyword Arguments:
-            reified_dims: dict
-                dictionary of reified dimensions, exists to avoid
-                multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
                 local dimension space. Defaults to 'global_size', but
@@ -648,9 +642,6 @@ class HyperCube(object):
                 list of (dimension, stride) tuples
 
         Keyword Arguments:
-            reified_dims: dict
-                dictionary of reified dimensions, exists to avoid
-                multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
                 local dimension space. Defaults to 'global_size', but
@@ -707,9 +698,6 @@ class HyperCube(object):
                 list of (dimension, stride) tuples
 
         Keyword Arguments:
-            reified_dims: dict
-                dictionary of reified dimensions, exists to avoid
-                multiple reificiation operations
             scope: string
                 Governs whether iteration occurs over the global or
                 local dimension space. Defaults to 'global_size', but
@@ -719,7 +707,7 @@ class HyperCube(object):
             An iterator 
 
         """
-        def _make_cube(rdims, arrays, *args):
+        def _make_cube(dims, arrays, *args):
             """
             Create a hypercube given reified dimensions and a list of
             (dim_name, dim_slice) tuples
@@ -727,28 +715,28 @@ class HyperCube(object):
 
             # Create new hypercube, registering everything in rdims
             cube = HyperCube()
-            cube.register_dimensions(rdims)
+            cube.register_dimensions(dims)
             cube.register_arrays(arrays)
 
             # Now update dimensions given slice information
             for (d, (s, e)) in args:
-                cube.update_dimension(name=d, local_size=rdims[d].local_size,
-                    lower_extent=s, upper_extent=e,
-                    global_size=rdims[d].global_size)
+                cube.update_dimension(name=d,
+                    local_size=dims[d].local_size,
+                    global_size=dims[d].global_size,
+                    lower_extent=s, upper_extent=e)
 
             return cube
 
         # Extract dimension names
-        dims = [ds[0] for ds in dim_strides]
-        rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
-        arrays = (hcu.reify_arrays(self.arrays(), rdims) 
+        dim_names = [ds[0] for ds in dim_strides]
+        arrays = (hcu.reify_arrays(self.arrays(), self.dimensions(copy=False)) 
             if kwargs.get('arrays', False) else {})
 
         # Return a cube-creating generator
-        return (_make_cube(rdims, arrays, *zip(dims, s)) for s
-            in self.endpoint_iter(*dim_strides, reified_dims=rdims, **kwargs))
+        return (_make_cube(self.dimensions(), arrays, *zip(dim_names, s))
+            for s in self.endpoint_iter(*dim_strides, **kwargs))
 
-    def slice_index(self, *dims, **kwargs):
+    def slice_index(self, *slice_dims, **kwargs):
         """
         Returns a tuple of slices, each slice corresponding to the
         dimensions supplied in dims
@@ -766,14 +754,10 @@ class HyperCube(object):
                 list of dimensions which should have slice
                 objects returned.
 
-        Keyword Arguments:
-            reified_dims: dict
-                dictionary of reified dimensions, exists to avoid
-                multiple reificiation operations
-
         Returns:
             A tuple containing slices for each dimension in dims
         """
-        rdims = kwargs.get('reified_dims', None) or self.dimensions(reify=True)
-        return tuple(slice(rdims[d].lower_extent, rdims[d].upper_extent, 1)
-            for d in dims)
+        dims = self.dimensions(copy=False)
+
+        return tuple(slice(dims[d].lower_extent, dims[d].upper_extent, 1)
+            for d in slice_dims)

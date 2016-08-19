@@ -23,15 +23,20 @@ import hypercube as hc
 
 cube = hc.HyperCube()
 
+ntime = 1000
+na = 64
+nchan = 32768
+nbl = 64*(64-1)//2
+nvis = ntime*nbl*nchan
+
 # Register time, baseline, channel and polarisation dimensions
-cube.register_dimension('ntime', 1000, description='Timesteps')
-cube.register_dimension('na', 64, description='Antenna')
-cube.register_dimension('nchan', 32768, description='Channels')
+cube.register_dimension('ntime', ntime, description='Timesteps')
+cube.register_dimension('na', na, description='Antenna')
+cube.register_dimension('nchan', nchan, description='Channels')
 cube.register_dimension('npol', 4, description='Polarisations')
 cube.register_dimension('nsrc', 100, description='Sources')
-# Note these dimension sizes are described in terms of other dimensions
-cube.register_dimension('nbl', 'na*(na-1)//2', description='Baselines')
-cube.register_dimension('nvis', 'ntime*nbl*nchan', description='Visibilities')
+cube.register_dimension('nbl', nbl, description='Baselines')
+cube.register_dimension('nvis', nvis, description='Visibilities')
 
 # Register visibility and UVW arrays
 cube.register_array('lm', ('nsrc', 2), dtype=np.float32)

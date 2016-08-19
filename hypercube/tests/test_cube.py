@@ -37,14 +37,14 @@ class Test(unittest.TestCase):
         """ Tear down each test case """
         pass
 
-    def test_dimension_registration_and_reification(self):
-        """ Test dimension registration and reification """
+    def test_dimension_registration_and_update(self):
+        """ Test dimension registration and update """
         # Set up our problem size
         ntime, na, nchan, npol = 100, 64, 128, 4
         nvis = ntime*nchan*na*(na-1)//2
 
-        nbl_expr = 'na*(na-1)//2'
-        nvis_expr = 'ntime*nbl*nchan'
+        nbl = na*(na-1)//2
+        nvis = ntime*nbl*nchan
 
         # Set up the hypercube dimensions
         cube = hc.HyperCube()
@@ -52,67 +52,36 @@ class Test(unittest.TestCase):
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
         cube.register_dimension('npol', npol)
-        cube.register_dimension('nbl', nbl_expr)
-        cube.register_dimension('nvis', nvis_expr)
-
-        # Test that we still have an abstract dimensions when
-        # no reification is requested
-        dims = cube.dimensions()
-        self.assertTrue(dims['nvis'].global_size == nvis_expr)
-        self.assertTrue(dims['nvis'].local_size == nvis_expr)
-        self.assertTrue(dims['nvis'].lower_extent == nvis_expr)
-        self.assertTrue(dims['nvis'].upper_extent == nvis_expr)
-
-        # Test that we now have concrete dimensions when
-        # reification is requested
-        dims = cube.dimensions(reify=True)
-        self.assertTrue(dims['nvis'].global_size == nvis)
-        self.assertTrue(dims['nvis'].local_size == nvis)
-        self.assertTrue(dims['nvis'].lower_extent == 0)
-        self.assertTrue(dims['nvis'].upper_extent == nvis)
 
         # Reduce the local size of the ntime, na and nchan dimensions
         local_ntime = ntime//2
         local_na = na - 2
         local_nchan = nchan // 4
-        local_nvis = local_ntime*local_nchan*local_na*(local_na-1)//2
 
         cube.update_dimension(name='ntime', local_size=local_ntime,
-            lower_extent=0, upper_extent=local_ntime)
+            lower_extent=1, upper_extent=local_ntime)
         cube.update_dimension(name='na', local_size=local_na,
-            lower_extent=0, upper_extent=local_na)
+            lower_extent=2, upper_extent=local_na)
         cube.update_dimension(name='nchan', local_size=local_nchan,
-            lower_extent=0, upper_extent=local_nchan)
+            lower_extent=3, upper_extent=local_nchan)
 
-        # Test that we now have concrete dimensions when
-        # reification is requested
-        dims = cube.dimensions(reify=True)
-        self.assertTrue(dims['nvis'].global_size == nvis)
-        self.assertTrue(dims['nvis'].local_size == local_nvis)
-        self.assertTrue(dims['nvis'].lower_extent == 0)
-        self.assertTrue(dims['nvis'].upper_extent == local_nvis)
-
-        # Test individual dimension retrieval
-        dim = cube.dimension('nvis')
-        self.assertTrue(dim.global_size == nvis_expr)
-        self.assertTrue(dim.local_size == nvis_expr)
-        self.assertTrue(dim.lower_extent == nvis_expr)
-        self.assertTrue(dim.upper_extent == nvis_expr)
-
-        # Test individual dimension reification
-        dim = cube.dimension('nvis', reify=True)
-        self.assertTrue(dim.global_size == nvis)
-        self.assertTrue(dim.local_size == local_nvis)
-        self.assertTrue(dim.lower_extent == 0)
-        self.assertTrue(dim.upper_extent == local_nvis)
-
-        # Test that we still have an abstract dimensions when
-        # no reification is requested
         dims = cube.dimensions()
-        self.assertTrue(dims['nvis'].global_size == nvis_expr)
-        self.assertTrue(dims['nvis'].local_size == nvis_expr)
-        self.assertTrue(dims['nvis'].lower_extent == nvis_expr)
-        self.assertTrue(dims['nvis'].upper_extent == nvis_expr)
+        
+        self.assertTrue(dims['ntime'].global_size == ntime)
+        self.assertTrue(dims['ntime'].local_size == local_ntime)
+        self.assertTrue(dims['ntime'].lower_extent == 1)
+        self.assertTrue(dims['ntime'].upper_extent == local_ntime)
+
+        self.assertTrue(dims['na'].global_size == na)
+        self.assertTrue(dims['na'].local_size == local_na)
+        self.assertTrue(dims['na'].lower_extent == 2)
+        self.assertTrue(dims['na'].upper_extent == local_na)
+
+        self.assertTrue(dims['nchan'].global_size == nchan)
+        self.assertTrue(dims['nchan'].local_size == local_nchan)
+        self.assertTrue(dims['nchan'].lower_extent ==3)
+        self.assertTrue(dims['nchan'].upper_extent == local_nchan)
+
 
     def test_dimension_updates(self):
         """ Test dimension updates """
@@ -150,6 +119,7 @@ class Test(unittest.TestCase):
         """ Test array registration and reification """
         # Set up our problem size
         ntime, na, nchan, npol = 100, 64, 128, 4
+        nbl = na*(na-1)//2
 
         # Set up the hypercube dimensions
         cube = hc.HyperCube()
@@ -157,7 +127,7 @@ class Test(unittest.TestCase):
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
         cube.register_dimension('npol', npol)
-        cube.register_dimension('nbl', 'na*(na-1)//2')
+        cube.register_dimension('nbl', nbl)
         cube.register_dimension('nvis', 'ntime*nbl*nchan')
 
         # Register the visibility array with abstract shape
@@ -172,7 +142,7 @@ class Test(unittest.TestCase):
 
         # Test that we have a concrete shape after reifying the arrays
         arrays = cube.arrays(reify=True)
-        concrete_shape = (ntime, na*(na-1)//2, nchan, npol)
+        concrete_shape = (ntime, nbl, nchan, npol)
         self.assertTrue(arrays[VIS].shape == concrete_shape)
 
         # Update the local size and extents of the time dimension
@@ -183,7 +153,7 @@ class Test(unittest.TestCase):
         # Test that the concrete shape reflects the new local_size
         # after reifying the arrays
         arrays = cube.arrays(reify=True)
-        concrete_shape = (local_ntime, na*(na-1)//2, nchan, npol)
+        concrete_shape = (local_ntime, nbl, nchan, npol)
         self.assertTrue(arrays[VIS].shape == concrete_shape)
 
         # Test individual array retrieval
@@ -202,6 +172,7 @@ class Test(unittest.TestCase):
     def test_array_creation(self):
         ntime, na, nchan, npol = 100, 64, 128, 4
         nbl = na*(na-1)//2
+        nvis = ntime*nbl*nchan
 
         # Set up the hypercube dimensions
         cube = hc.HyperCube()
@@ -209,8 +180,8 @@ class Test(unittest.TestCase):
         cube.register_dimension('na', na)
         cube.register_dimension('nchan', nchan)
         cube.register_dimension('npol', npol)
-        cube.register_dimension('nbl', 'na*(na-1)//2')
-        cube.register_dimension('nvis', 'ntime*nbl*nchan')
+        cube.register_dimension('nbl', nbl)
+        cube.register_dimension('nvis', nvis)
 
         # Register the array with abstract shapes
         cube.register_array('visibilities', ('ntime','nbl','nchan','npol'), np.complex128)
@@ -331,120 +302,6 @@ class Test(unittest.TestCase):
         self.assertTrue(_na == local_na)
         self.assertTrue(_nchan == local_nchan)
         self.assertTrue(_nvis == local_nvis)
-
-    def test_ignore_extents(self):
-        # Set up our problem size
-        ntime, na, nchan, npol = 100, 64, 128, 4
-        nbl_expr = 'na*(na-1)//2'
-        nbl = na*(na-1)//2
-        nvis = ntime*nbl*nchan
-
-        # Set up the hypercube dimensions
-        cube = hc.HyperCube()
-        cube.register_dimension('ntime', ntime)
-        cube.register_dimension('na', na)
-        cube.register_dimension('nchan', nchan)
-        cube.register_dimension('npol', npol)
-        #import pdb; pdb.set_trace()
-        cube.register_dimension('nbl', nbl_expr, ignore_extents=False)
-        cube.register_dimension('nvis', 'ntime*nbl*nchan')
-
-        dims = cube.dimensions()
-
-        # Not using an expression, should be False
-        self.assertTrue(dims['nbl'].ignore_extents == False)
-        # Explicitly mandated to be False
-        self.assertTrue(dims['nbl'].ignore_extents == False)
-        # Is an expression, ignore_extents defaults to True
-        self.assertTrue(dims['nvis'].ignore_extents == True)
-
-        # Test that trying to set the upper_extent beyond
-        # the global size fails in the case of nbl
-        with self.assertRaises(ValueError) as cm:
-            cube.update_dimension('nbl', upper_extent=nbl+3)
-            cube.dimensions(reify=True)
-
-        self.assertTrue('nbl' in cm.exception.message)
-        self.assertTrue(str(nbl+3) in cm.exception.message)
-        self.assertTrue(str(nbl) in cm.exception.message)
-
-        # Fix up the upper_extent for the next test case
-        cube.update_dimension('nbl', upper_extent=nbl_expr)
-
-        # Test that setting the upper_extent beyond the
-        # global size succeeds in the case of nvis
-        cube.update_dimension('nvis', upper_extent=nvis+3)
-        cube.dimensions(reify=True)
-
-    def test_parse_expression(self):
-        """ Test expression parsing """
-        from hypercube.expressions import parse_expression
-
-        # Set up our problem size
-        ntime, na, nchan = 100, 64, 128
-        nbl = na*(na-1)//2
-        nvis = ntime*nbl*nchan
-
-        # Check that the parser expression produces a results
-        # that agrees with our manual calculation
-        assert nvis == parse_expression('nvis',
-            variables={ 'ntime' : ntime, 'na' : na, 'nchan': nchan,
-                'nbl': 'na*(na-1)//2',
-                'nvis': 'ntime*nbl*nchan' })
-
-        # Now set up the above example on the hypercube
-        cube = hc.HyperCube()
-        cube.register_dimension('ntime', ntime)
-        cube.register_dimension('na', na)
-        cube.register_dimension('nchan', nchan)
-        cube.register_dimension('nbl', 'na*(na-1)//2')
-        cube.register_dimension('nvis', 'ntime*nbl*nchan')
-
-        # Sanity check our global dimension sizes
-        G = cube.dim_global_size_dict()
-        self.assertTrue(G['nbl'] == nbl)
-        self.assertTrue(G['nvis'] == nvis)
-
-        # Create some local variable sizes
-        local_ntime, local_na, local_nchan = 10, 7, 16
-        local_nbl = local_na*(local_na-1)//2
-        local_nvis = local_ntime*local_nbl*local_nchan
-
-        local_dims = ['ntime', 'na', 'nchan']
-        values = [local_ntime, local_na, local_nchan]
-
-        # Update local size of selected dimensions
-        for arg, ls in zip(local_dims, values):
-            cube.update_dimension(name=arg, local_size=ls,
-                lower_extent=0, upper_extent=ls)
-
-        # Check that local dimension query produces
-        # the corrected derived sizes
-        L = cube.dim_local_size_dict()
-        self.assertTrue(L['nbl'] == local_nbl)
-        self.assertTrue(L['nvis'] == local_nvis)
-
-        # Sanity check our global dimension sizes
-        G = cube.dim_global_size_dict()
-        self.assertTrue(G['nbl'] == nbl)
-        self.assertTrue(G['nvis'] == nvis)
-
-
-    def test_parse_expression_fail(self):
-        """ Test expression parsing failure """
-        from hypercube.expressions import parse_expression
-
-        # Check that a missing nchan in nvis produces an exception
-        with self.assertRaises(ValueError) as cm:
-            parse_expression('nvis',
-                variables={ 'ntime': 10, 'nbl': 21,
-                    'nvis': 'ntime*nbl*nchan' })
-
-            self.assertTrue("Unable to evaluate "
-                "expression 'ntime*nbl*nchan'" in str(cm.exception))
-
-            self.assertTrue("as variable 'nchan' was not"
-                " in the variable dictionary.")
 
     def test_iterators(self):
         """ Test chunk iteration """
