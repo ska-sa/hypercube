@@ -38,22 +38,18 @@ def create_dimension(name, dim_data, **kwargs):
 class Dimension(object):
     __slots__ = ['_name', '_global_size', '_local_size',
         '_lower_extent', '_upper_extent',
-        '_description', '_zero_valid', '_ignore_extents']
+        '_description', '_zero_valid']
 
     def __init__(self, name, global_size, local_size=None,
             lower_extent=None, upper_extent=None,
-            description=None, zero_valid=True, ignore_extents=None):
+            description=None, zero_valid=True):
         """
-        Create a dimension data dictionary from supplied arguments
+        Create a Dimension from supplied arguments
         """
         super(Dimension, self).__init__()
 
-        def _is_extent_expr(l, u):
-            return isinstance(l, str) or isinstance(u, str)
-
         if lower_extent is None:
-            lower_extent = (global_size if
-                isinstance(global_size, str) else 0)
+            lower_extent = 0
 
         if upper_extent is None:
             upper_extent = global_size
@@ -64,12 +60,6 @@ class Dimension(object):
         if description is None:
             description = DEFAULT_DESCRIPTION
 
-        if ignore_extents is None:
-            if _is_extent_expr(lower_extent, upper_extent):
-                ignore_extents = True
-            else:
-                ignore_extents = False
-
         self._name = name
         self._global_size = global_size
         self._local_size = local_size
@@ -77,7 +67,6 @@ class Dimension(object):
         self._upper_extent = upper_extent
         self._description = description
         self._zero_valid = zero_valid
-        self._ignore_extents = ignore_extents
 
     @property
     def name(self):
@@ -110,15 +99,10 @@ class Dimension(object):
     @property
     def zero_valid(self):
         return self._zero_valid
-
-    @property
-    def ignore_extents(self):
-        return self._ignore_extents
     
     def update(self, global_size=None, local_size=None,
         lower_extent=None, upper_extent=None,
-        description=None, zero_valid=None,
-        ignore_extents=None):
+        description=None, zero_valid=None):
 
         if global_size is not None: self._global_size = global_size
         if local_size is not None: self._local_size = local_size
@@ -126,23 +110,12 @@ class Dimension(object):
         if upper_extent is not None: self._upper_extent = upper_extent
         if description is not None: self._description = description
         if zero_valid is not None: self._zero_valid = zero_valid
-        if ignore_extents is not None: self._ignore_extents = ignore_extents
 
         # Check that we've been given valid values
         self.validate()
 
-    def is_expression(self):
-        return (isinstance(self.global_size, str) or
-            isinstance(self.local_size, str) or
-            isinstance(self.lower_extent, str) or 
-            isinstance(self.upper_extent, str))
-
     def validate(self):
         """ Validate the contents of a dimension data dictionary """
-
-        # Currently, we don't validate string expressions
-        if self.is_expression():
-            return
 
         # Validate dimensions
         if self.local_size > self.global_size:
@@ -150,10 +123,6 @@ class Dimension(object):
                 "local size {l} is greater than "
                 "it's global size {g}".format(n=self._name,
                     l=self._local_size, g=self._global_size))
-
-        # Don't do any extent checking
-        if self.ignore_extents:
-            return
 
         if self.extent_size > self.local_size:
             msg = ("Dimension '{n}' "
