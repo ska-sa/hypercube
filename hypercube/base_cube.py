@@ -738,15 +738,17 @@ class HyperCube(object):
 
     def slice_index(self, *slice_dims, **kwargs):
         """
-        Returns a tuple of slices, each slice corresponding to the
-        dimensions supplied in dims
+        Returns a tuple of slices, each slice equal to the
+        slice(lower_extent, upper_extent, 1) of the dimensions
+        supplied in slice_dims. If the dimension is integer d,
+        slice(0, d, 1) will be used instead of the lower and upper extents
 
         e.g.
         >>> A = np.ones(ntime, na)
-        >>> idx = cube.slice_index('ntime','na')
+        >>> idx = cube.slice_index('ntime','na', 3)
         >>> A[idx].sum()
-        >>> ntime, na = cube.slice_index('ntime', 'na')
-        >>> A[ntime, na].sum()
+        >>> ntime, na, components = cube.slice_index('ntime', 'na', 3)
+        >>> A[ntime, na, components].sum()
 
 
         Arguments:
@@ -760,4 +762,5 @@ class HyperCube(object):
         dims = self.dimensions(copy=False)
 
         return tuple(slice(dims[d].lower_extent, dims[d].upper_extent, 1)
+            if d in dims else slice(0, d, 1)
             for d in slice_dims)
