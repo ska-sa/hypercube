@@ -20,6 +20,7 @@
 
 import collections
 import itertools
+import sys
 import types
 from weakref import WeakKeyDictionary
 
@@ -414,7 +415,7 @@ class HyperCube(object):
             return self._properties[name]
         except KeyError:
             raise KeyError("Property '{n}' is not registered "
-                "on this solver".format(n=name))
+                "on this solver".format(n=name)), None, sys.exc_info()[2]
 
     def arrays(self, reify=False):
         """
@@ -432,17 +433,13 @@ class HyperCube(object):
         the local_size of the dimension.
         """
 
-        # Complain if the array doesn't exist
-        if name not in self._arrays:
+        try:
+            return (self._arrays[name] if not reify else
+                hcu.reify_arrays({name : self._arrays[name]},
+                    self.dimensions(copy=False))[name])
+        except KeyError:
             raise KeyError("Array '{n}' is not registered on this solver"
-                .format(n=name))
-
-        # Just return the array if we're not reifying
-        if not reify:
-            return self._arrays[name]
-
-        return hcu.reify_arrays({name : self._arrays[name]},
-            self.dimensions(copy=False))[name]
+                .format(n=name)), None, sys.exc_info()[2]
 
     def dimensions(self, copy=True):
         """
@@ -465,7 +462,7 @@ class HyperCube(object):
             return self._dims[name]
         except KeyError:
             raise KeyError("Dimension '{n}' is not registered "
-                            "on this solver".format(n=name))
+                "on this solver".format(n=name)), None, sys.exc_info()[2]
 
     def gen_dimension_table(self):
         """
