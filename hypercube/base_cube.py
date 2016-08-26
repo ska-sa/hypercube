@@ -28,7 +28,7 @@ import numpy as np
 from attrdict import AttrDict
 from tabulate import tabulate
 
-from hypercube.dims import create_dimension
+from hypercube.dims import create_dimension, Dimension
 import hypercube.util as hcu
 
 LOCAL_SIZE = 'local_size'
@@ -150,8 +150,15 @@ class HyperCube(object):
             dims = dims.itervalues()
 
         for dim in dims:
-            self.update_dimension(**dim)
-
+            # Defer to update dimension for dictionaries
+            if isinstance(dim, dict):
+                self.update_dimension(**dim)
+            # Replace if given a Dimension object
+            elif isinstance(dim, Dimension):
+                self._dims[dim.name] = dim
+            else:
+                raise TypeError("Unhandled type '{t}'"
+                    "in update_dimensions".format(t=type(dim)))
 
     def update_dimension(self, name, **update_dict):
         """
@@ -475,7 +482,7 @@ class HyperCube(object):
         table = []
         for dimval in sorted(self.dimensions(copy=False).itervalues(),
                              key=lambda dval: dval.name.upper()):
-            
+
             table.append([dimval.name,
                 dimval.description,
                 dimval.global_size,
@@ -573,7 +580,7 @@ class HyperCube(object):
                 can also be 'local_size'.
 
         Returns:
-            An iterator 
+            An iterator
         """
 
         def _dim_endpoints(size, stride):
@@ -613,7 +620,7 @@ class HyperCube(object):
                 can also be 'local_size'.
 
         Returns:
-            An iterator 
+            An iterator
         """
         def _create_slices(*args):
             return tuple(slice(s,e,1) for (s, e) in args)
@@ -649,7 +656,7 @@ class HyperCube(object):
                 the lower and upper extents
 
         Returns:
-            An iterator 
+            An iterator
         """
 
         # Extract dimension names
@@ -701,7 +708,7 @@ class HyperCube(object):
                 can also be 'local_size'.
 
         Returns:
-            An iterator 
+            An iterator
 
         """
         def _make_cube(dims, arrays, *args):
@@ -726,7 +733,7 @@ class HyperCube(object):
 
         # Extract dimension names
         dim_names = [ds[0] for ds in dim_strides]
-        arrays = (hcu.reify_arrays(self.arrays(), self.dimensions(copy=False)) 
+        arrays = (hcu.reify_arrays(self.arrays(), self.dimensions(copy=False))
             if kwargs.get('arrays', False) else {})
 
         # Return a cube-creating generator
