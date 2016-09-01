@@ -492,12 +492,8 @@ class HyperCube(object):
 
     def copy(self):
         """ Return a copy of the hypercube """
-        new_cube = HyperCube()
-        new_cube.register_dimensions(self.dimensions(copy=False))
-        new_cube.register_arrays(self.arrays())
-        new_cube.register_properties(self.properties())
-
-        return new_cube
+        return HyperCube(dimensions=self.dimensions(copy=False),
+            arrays=self.arrays(), properties=self.properties())
 
     def gen_dimension_table(self):
         """
