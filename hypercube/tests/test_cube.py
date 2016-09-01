@@ -24,6 +24,8 @@ import sys
 import numpy as np
 
 import hypercube as hc
+from hypercube.dims import create_dimension
+
 
 class Test(unittest.TestCase):
     """
@@ -66,7 +68,7 @@ class Test(unittest.TestCase):
             lower_extent=3, upper_extent=local_nchan)
 
         dims = cube.dimensions()
-        
+
         self.assertTrue(dims['ntime'].global_size == ntime)
         self.assertTrue(dims['ntime'].local_size == local_ntime)
         self.assertTrue(dims['ntime'].lower_extent == 1)
@@ -516,6 +518,55 @@ class Test(unittest.TestCase):
         self.assertTrue(dcube.dimensions() == lcube.dimensions())
         self.assertTrue(dcube.arrays() == lcube.arrays())
         self.assertTrue(dcube.properties() == lcube.properties())
+
+    def test_construct_and_copy(self):
+        # Dimensions
+        D = {
+            'ntime': create_dimension('ntime', 72),
+            'na' : create_dimension('na', 7),
+            'nbl' : create_dimension('nbl', 21),
+        }
+
+        # Arrays
+        A = {
+            'uvw': {
+                'name': 'uvw',
+                'shape': ('ntime','na',3),
+                'dtype': np.float64 },
+            'model_vis' : {
+                'name': 'model_vis',
+                'shape': ('ntime', 'nbl', 'nchan', 4),
+                'dtype' : np.complex128  }
+        }
+
+        # Properties
+        P = {
+            'alpha': {
+                'name': 'alpha',
+                'default' : 1.5,
+                'dtype': np.float64 },
+            'beta' : {
+                'name': 'model_vis',
+                'default' : 1 + 2j,
+                'dtype' : np.complex128  }
+        }
+
+        # Explicit registration
+        ecube = hc.HyperCube()
+        ecube.register_dimensions(D)
+        ecube.register_arrays(A)
+        ecube.register_properties(P)
+
+        copy = ecube.copy()
+        self.assertTrue(copy.dimensions() == ecube.dimensions())
+        self.assertTrue(copy.arrays() == ecube.arrays())
+        self.assertTrue(copy.properties() == ecube.properties())
+
+        # Register during construction
+        ccube = hc.HyperCube(dimensions=D, arrays=A, properties=P)
+        self.assertTrue(ccube.dimensions() == ecube.dimensions())
+        self.assertTrue(ccube.arrays() == ecube.arrays())
+        self.assertTrue(ccube.properties() == ecube.properties())
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)

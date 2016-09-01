@@ -65,6 +65,22 @@ class HyperCube(object):
         self._arrays = collections.OrderedDict()
         self._properties = collections.OrderedDict()
 
+        # Register any dimensions, arrays and
+        # properties we're provided
+        dims = kwargs.get('dimensions', None)
+        arrays = kwargs.get('arrays', None)
+        properties = kwargs.get('properties', None)
+
+        if dims is not None:
+            self.register_dimensions(dims)
+
+        if arrays is not None:
+            self.register_arrays(arrays)
+
+        if properties is not None:
+            self.register_properties(properties)
+
+
     def bytes_required(self):
         """ Returns the memory required by all arrays in bytes."""
         return np.sum([hcu.array_bytes(a) for a
@@ -473,6 +489,15 @@ class HyperCube(object):
         except KeyError:
             raise KeyError("Dimension '{n}' is not registered "
                 "on this solver".format(n=name)), None, sys.exc_info()[2]
+
+    def copy(self):
+        """ Return a copy of the hypercube """
+        new_cube = HyperCube()
+        new_cube.register_dimensions(self.dimensions(copy=False))
+        new_cube.register_arrays(self.arrays())
+        new_cube.register_properties(self.properties())
+
+        return new_cube
 
     def gen_dimension_table(self):
         """
