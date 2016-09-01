@@ -451,6 +451,71 @@ class Test(unittest.TestCase):
 
         self.assertTrue(S == A_sum)
 
+    def test_properties(self):
+        cube = hc.HyperCube()
+        cube.register_property('alpha', np.float64, 1.5)
+
+        self.assertTrue(cube.alpha == 1.5)
+        self.assertTrue(cube.alpha.dtype == np.float64)
+
+        cube.set_alpha(1.6)
+
+        self.assertTrue(cube.alpha == 1.6)
+        self.assertTrue(cube.alpha.dtype == np.float64)
+
+        cube.alpha = 1.7
+
+        self.assertTrue(cube.alpha == 1.7)
+        self.assertTrue(cube.alpha.dtype == np.float64)
+
+    def test_mass_registration(self):
+        # Dimensions
+        D = {
+            'ntime': create_dimension('ntime', 72),
+            'na' : create_dimension('na', 7),
+            'nbl' : create_dimension('nbl', 21),
+        }
+
+        # Arrays
+        A = {
+            'uvw': {
+                'name': 'uvw',
+                'shape': ('ntime','na',3),
+                'dtype': np.float64 },
+            'model_vis' : {
+                'name': 'model_vis',
+                'shape': ('ntime', 'nbl', 'nchan', 4),
+                'dtype' : np.complex128  }
+        }
+
+        # Properties
+        P = {
+            'alpha': {
+                'name': 'alpha',
+                'default' : 1.5,
+                'dtype': np.float64 },
+            'beta' : {
+                'name': 'model_vis',
+                'default' : 1 + 2j,
+                'dtype' : np.complex128  }
+        }
+
+        # Test registration by dictionary
+        dcube = hc.HyperCube()
+        dcube.register_dimensions(D)
+        dcube.register_arrays(A)
+        dcube.register_properties(P)
+
+        # Test registraion by list
+        lcube = hc.HyperCube()
+        lcube.register_dimensions(D.itervalues())
+        lcube.register_arrays(A.itervalues())
+        lcube.register_properties(P.itervalues())
+
+        # The two should agree
+        self.assertTrue(dcube.dimensions() == lcube.dimensions())
+        self.assertTrue(dcube.arrays() == lcube.arrays())
+        self.assertTrue(dcube.properties() == lcube.properties())
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)

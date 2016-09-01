@@ -398,7 +398,7 @@ class HyperCube(object):
 
         return P
 
-    def register_properties(self, property_list):
+    def register_properties(self, properties):
         """
         Register properties using a list defining the properties.
 
@@ -409,7 +409,10 @@ class HyperCube(object):
                 'default':1.41e6, 'registrant':'solver' },
         ]
         """
-        for prop in property_list:
+        if isinstance(properties, collections.Mapping):
+            properties = properties.itervalues()
+
+        for prop in properties:
             self.register_property(**prop)
 
     def properties(self):

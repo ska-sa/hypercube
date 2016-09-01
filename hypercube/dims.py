@@ -71,7 +71,7 @@ class Dimension(object):
     @property
     def name(self):
         return self._name
-    
+
     @property
     def global_size(self):
         return self._global_size
@@ -79,19 +79,19 @@ class Dimension(object):
     @property
     def local_size(self):
         return self._local_size
-    
+
     @property
     def lower_extent(self):
         return self._lower_extent
-    
+
     @property
     def upper_extent(self):
         return self._upper_extent
-    
+
     @property
     def extent_size(self):
         return self.upper_extent - self.lower_extent
-    
+
     @property
     def description(self):
         return self._description
@@ -99,7 +99,19 @@ class Dimension(object):
     @property
     def zero_valid(self):
         return self._zero_valid
-    
+
+    def __eq__(self, other):
+        # Note description is left out
+        return (self.name == other.name and
+            self.global_size == other.global_size and
+            self.local_size == other.local_size and
+            self.lower_extent == other.lower_extent and
+            self.upper_extent == other.upper_extent and
+            self.zero_valid == other.zero_valid)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def update(self, global_size=None, local_size=None,
         lower_extent=None, upper_extent=None,
         description=None, zero_valid=None):
