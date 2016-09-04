@@ -479,13 +479,13 @@ class HyperCube(object):
 
         return self._dims.copy() if copy else self._dims
 
-    def dimension(self, name):
+    def dimension(self, name, copy=True):
         """
         Returns the specified dimension object.
         """
 
         try:
-            return self._dims[name]
+            return self._dims[name].copy() if copy else self._dims[name]
         except KeyError:
             raise KeyError("Dimension '{n}' is not registered "
                 "on this solver".format(n=name)), None, sys.exc_info()[2]
