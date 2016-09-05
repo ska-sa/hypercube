@@ -485,7 +485,7 @@ class HyperCube(object):
         """
 
         try:
-            return self._dims[name].copy() if copy else self._dims[name]
+            return create_dimension(name, self._dims[name]) if copy else self._dims[name]
         except KeyError:
             raise KeyError("Dimension '{n}' is not registered "
                 "on this solver".format(n=name)), None, sys.exc_info()[2]
