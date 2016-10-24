@@ -526,15 +526,15 @@ class HyperCube(object):
         reified_arrays = self.arrays(reify=True)
 
         table = []
-        for arrval in sorted(reified_arrays.itervalues(),
+        for array in sorted(self.arrays().itervalues(),
                              key=lambda aval: aval.name.upper()):
             # Get the actual size of the array
-            nbytes = hcu.array_bytes(reified_arrays[arrval.name])
+            nbytes = hcu.array_bytes(reified_arrays[array.name])
             # Print shape tuples without spaces and single quotes
-            sshape = '(%s)' % (','.join(map(str, arrval.shape)),)
-            table.append([arrval.name,
+            sshape = '(%s)' % (','.join(map(str, array.shape)),)
+            table.append([array.name,
                 hcu.fmt_bytes(nbytes),
-                np.dtype(arrval.dtype).name,
+                np.dtype(array.dtype).name,
                 sshape])
 
         return table, headers
@@ -699,13 +699,14 @@ class HyperCube(object):
         is_scope_global = kwargs.get('scope', GLOBAL_SIZE) == GLOBAL_SIZE
         local_update_requested = kwargs.get('update_local_size', False)
 
-        # Return a tuple-dict-creating generator
         if is_scope_global and local_update_requested:
-            return (_create_dim_dicts_with_local(*zip(dims, s)) for s
-                in self.endpoint_iter(*dim_strides, **kwargs))
+            f = _create_dim_dicts_with_local
         else:
-            return (_create_dim_dicts(*zip(dims, s)) for s
-                in self.endpoint_iter(*dim_strides, **kwargs))
+            f = _create_dim_dicts
+
+        # Return a tuple-dict-creating generator
+        return (f(*zip(dims, s)) for s
+            in self.endpoint_iter(*dim_strides, **kwargs))
 
     def cube_iter(self, *dim_strides, **kwargs):
         """
