@@ -240,6 +240,10 @@ class Test(unittest.TestCase):
 
         args = ['ntime','na','nbl','nchan','nvis']
 
+        #============
+        # Global Size
+        #============
+
         # Test that the mutiple argument form works
         _ntime, _na, _nbl, _nchan, _nvis = cube.dim_global_size(*args)
 
@@ -248,6 +252,10 @@ class Test(unittest.TestCase):
         self.assertTrue(_na == na)
         self.assertTrue(_nchan == nchan)
         self.assertTrue(_nvis == nvis)
+
+        #========
+        # Extents
+        #========
 
         # Test that the multiple argument form works
         ((tl, tu), (al, au), (bl, bu),
@@ -259,10 +267,20 @@ class Test(unittest.TestCase):
         self.assertTrue(bl == 4 and bu == nbl)
         self.assertTrue(vl == 5 and vu == nvis)
 
+        # Test that integral argument for works
+        (tl, tu), (ol, ou) = cube.dim_extents('ntime', 11)
+
+        self.assertTrue(tl == 1 and tu == ntime)
+        self.assertTrue(ol == 0 and ou == 11)
+
         # Test that singleton argument form works
         tl, tu = cube.dim_extents('ntime')
 
         self.assertTrue(tl == 1 and tu == ntime)
+
+        #============
+        # Extent Size
+        #============
 
         # Test that the mutiple argument form works
         _ntime, _na, _nbl, _nchan, _nvis = cube.dim_extent_size(*args)
@@ -285,6 +303,10 @@ class Test(unittest.TestCase):
         self.assertTrue(_na == na)
         self.assertTrue(_nchan == nchan)
         self.assertTrue(_nvis == nvis)
+
+        #============
+        # Local Size
+        #============
 
         local_ntime, local_na, local_nchan = 10, 7, 16
         local_nbl = local_na*(local_na-1)//2

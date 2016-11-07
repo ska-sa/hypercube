@@ -217,9 +217,10 @@ class HyperCube(object):
         if len(args) == 1 and isinstance(args[0], str):
             args = (s.strip() for s in re.split(',|:|;| ', args[0]))
 
-        # Now get the specific attribute for each argument, parsing
-        # any string expressions on the way
-        result = [getattr(self._dims[name], attr) for name in args]
+        # Now get the specific attribute for each string dimension
+        # Integers are returned as is
+        result = [d if isinstance(d, (int, np.integer))
+            else getattr(self._dims[d], attr) for d in args]
 
         # Return single element if length one else entire list
         return result[0] if len(result) == 1 else result
@@ -271,6 +272,9 @@ class HyperCube(object):
         t_ex, bl_ex, ch_ex, src_ex = slvr.dim_lower_extent('ntime,nbl:nchan nsrc')
         """
 
+        # The lower extent of any integral dimension is 0 by default
+        args = tuple(0 if isinstance(a, (int, np.integer))
+            else a for a in args)
         return self._dim_attribute('lower_extent', *args)
 
     def dim_upper_extent(self, *args):
@@ -788,8 +792,6 @@ class HyperCube(object):
         Returns:
             A tuple containing slices for each dimension in dims
         """
-        dims = self.dimensions(copy=False)
-
-        return tuple(slice(dims[d].lower_extent, dims[d].upper_extent, 1)
-            if d in dims else slice(0, d, 1)
-            for d in slice_dims)
+        return tuple(slice(l, u, 1) for l, u in zip(
+            self.dim_lower_extent(*slice_dims),
+            self.dim_upper_extent(*slice_dims)))
