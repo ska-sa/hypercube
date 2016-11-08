@@ -541,6 +541,32 @@ class Test(unittest.TestCase):
         self.assertTrue(dcube.arrays() == lcube.arrays())
         self.assertTrue(dcube.properties() == lcube.properties())
 
+    def test_array_extents_and_slice_index(self):
+        ntime, nbl, nchan = 10, 21, 16
+
+        cube = hc.HyperCube()
+        cube.register_dimension('ntime', ntime, lower_extent=1)
+        cube.register_dimension('nchan', nchan, lower_extent=3)
+        cube.register_dimension('nbl', nbl, lower_extent=4)
+
+        cube.register_array('model_vis',
+            ('ntime', 'nbl', 'nchan', 4), np.complex128)
+
+        vis_extents = cube.array_extents('model_vis')
+
+        self.assertTrue(vis_extents == [
+            (1, ntime), (4, nbl), (3, nchan), (0, 4)])
+
+        vis_slice = cube.array_slice_index('model_vis')
+
+        self.assertTrue(vis_slice == tuple((slice(1, ntime, 1),
+            slice(4, nbl, 1), slice(3, nchan, 1), slice(0, 4, 1))))
+
+        vis_slice = cube.slice_index(*cube.array('model_vis').shape)
+
+        self.assertTrue(vis_slice == tuple((slice(1, ntime, 1),
+            slice(4, nbl, 1), slice(3, nchan, 1), slice(0, 4, 1))))
+
     def test_construct_and_copy(self):
         # Dimensions
         D = {

@@ -199,7 +199,7 @@ class HyperCube(object):
 
         dim.update(**update_dict)
 
-    def _dim_attribute(self, attr, *args):
+    def _dim_attribute(self, attr, *args, **kwargs):
         """
         Returns a list of dimension attribute attr, for the
         dimensions specified as strings in args.
@@ -222,8 +222,9 @@ class HyperCube(object):
         result = [d if isinstance(d, (int, np.integer))
             else getattr(self._dims[d], attr) for d in args]
 
-        # Return single element if length one else entire list
-        return result[0] if len(result) == 1 else result
+        # Return single element if length one and single else entire list
+        return (result[0] if kwargs.get('single', True)
+            and len(result) == 1 else result)
 
     def dim_global_size_dict(self):
         """ Returns a mapping of dimension name to global size """
@@ -241,7 +242,7 @@ class HyperCube(object):
         """ Returns a mapping of dimension name to upper_extent """
         return { d.name: d.upper_extent for d in self._dims.itervalues()}
 
-    def dim_global_size(self, *args):
+    def dim_global_size(self, *args, **kwargs):
         """
         ntime, nbl, nchan = slvr.dim_global_size('ntime, 'nbl', 'nchan')
 
@@ -250,9 +251,9 @@ class HyperCube(object):
         ntime, nbl, nchan, nsrc = slvr.dim_global_size('ntime,nbl:nchan nsrc')
         """
 
-        return self._dim_attribute('global_size', *args)
+        return self._dim_attribute('global_size', *args, **kwargs)
 
-    def dim_local_size(self, *args):
+    def dim_local_size(self, *args, **kwargs):
         """
         ntime, nbl, nchan = slvr.dim_local_size('ntime, 'nbl', 'nchan')
 
@@ -261,9 +262,9 @@ class HyperCube(object):
         ntime, nbl, nchan, nsrc = slvr.dim_local_size('ntime,nbl:nchan nsrc')
         """
 
-        return self._dim_attribute('local_size', *args)
+        return self._dim_attribute('local_size', *args, **kwargs)
 
-    def dim_lower_extent(self, *args):
+    def dim_lower_extent(self, *args, **kwargs):
         """
         t_ex, bl_ex, ch_ex = slvr.dim_lower_extent('ntime, 'nbl', 'nchan')
 
@@ -275,9 +276,9 @@ class HyperCube(object):
         # The lower extent of any integral dimension is 0 by default
         args = tuple(0 if isinstance(a, (int, np.integer))
             else a for a in args)
-        return self._dim_attribute('lower_extent', *args)
+        return self._dim_attribute('lower_extent', *args, **kwargs)
 
-    def dim_upper_extent(self, *args):
+    def dim_upper_extent(self, *args, **kwargs):
         """
         t_ex, bl_ex, ch_ex = slvr.dim_upper_extent('ntime, 'nbl', 'nchan')
 
@@ -286,20 +287,20 @@ class HyperCube(object):
         t_ex, bl_ex, ch_ex, src_ex = slvr.dim_upper_extent('ntime,nbl:nchan nsrc')
         """
 
-        return self._dim_attribute('upper_extent', *args)
+        return self._dim_attribute('upper_extent', *args, **kwargs)
 
-    def dim_extents(self, *args):
-        l = self.dim_lower_extent(*args)
-        u = self.dim_upper_extent(*args)
+    def dim_extents(self, *args, **kwargs):
+        l = self.dim_lower_extent(*args, **kwargs)
+        u = self.dim_upper_extent(*args, **kwargs)
 
-        # Handle sequence and singletons differently
+        # Handle sequence and singles differently
         if isinstance(l, collections.Sequence):
             return zip(l, u)
         else:
             return (l, u)
 
-    def dim_extent_size(self, *args):
-        extents = self.dim_extents(*args)
+    def dim_extent_size(self, *args, **kwargs):
+        extents = self.dim_extents(*args, **kwargs)
 
         # Handle tuples and sequences differently
         if isinstance(extents, tuple):
@@ -769,6 +770,40 @@ class HyperCube(object):
         return (_make_cube(self.dimensions(), arrays, *zip(dim_names, s))
             for s in self.endpoint_iter(*dim_strides, **kwargs))
 
+    def array_extents(self, array_name, **kwargs):
+        """
+        Return a list of lower and upper extents for
+        the given array_name.
+
+        Arguments:
+            array_name : string
+                Name of an array registered on this hypercube
+
+        Returns:
+            A list of (lower_extent, upper_extent) tuples
+            associated with each dimensions
+        """
+
+        A = self.array(array_name, reify=False)
+        return self.dim_extents(*A.shape, single=False)
+
+    def array_slice_index(self, array_name, **kwargs):
+        """
+        Returns a tuple of slices, each slice equal to the
+        slice(lower_extent, upper_extent, 1) of the dimensions
+        of array_name.
+
+        Arguments:
+            array_name: string
+                Name of an array registered on this hypercube
+
+        Returns:
+            A tuple of slice(lower,upper,1) objects
+        """
+
+        A = self.array(array_name, reify=False)
+        return self.slice_index(*A.shape, single=False)
+
     def slice_index(self, *slice_dims, **kwargs):
         """
         Returns a tuple of slices, each slice equal to the
@@ -793,5 +828,5 @@ class HyperCube(object):
             A tuple containing slices for each dimension in dims
         """
         return tuple(slice(l, u, 1) for l, u in zip(
-            self.dim_lower_extent(*slice_dims),
-            self.dim_upper_extent(*slice_dims)))
+            self.dim_lower_extent(*slice_dims, single=False),
+            self.dim_upper_extent(*slice_dims, single=False)))
