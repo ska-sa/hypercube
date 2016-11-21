@@ -18,9 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-from copy import (copy as shallow_copy,
-    deepcopy)
-
 from attrdict import AttrDict
 import numpy as np
 
@@ -28,7 +25,7 @@ DEFAULT_DESCRIPTION = 'The FOURTH dimension!'
 
 def create_dimension(name, dim_data, **kwargs):
     if isinstance(dim_data, Dimension):
-        dim = deepcopy(dim_data)
+        dim = dim_data.copy()
         dim.update(**kwargs)
     else:
         dim = Dimension(name, dim_data, **kwargs)
@@ -46,27 +43,24 @@ class Dimension(object):
         """
         Create a Dimension from supplied arguments
         """
-        super(Dimension, self).__init__()
-
-        if lower_extent is None:
-            lower_extent = 0
-
-        if upper_extent is None:
-            upper_extent = global_size
-
-        if local_size is None:
-            local_size = global_size
-
-        if description is None:
-            description = DEFAULT_DESCRIPTION
-
         self._name = name
         self._global_size = global_size
-        self._local_size = local_size
-        self._lower_extent = lower_extent
-        self._upper_extent = upper_extent
-        self._description = description
+        self._lower_extent = 0 if lower_extent is None else lower_extent
+        self._upper_extent = (global_size if upper_extent is None
+                                    else upper_extent)
+        self._local_size =  (global_size if local_size is None
+                                    else local_size)
+        self._description = (DEFAULT_DESCRIPTION if description is None
+                                    else description)
         self._zero_valid = zero_valid
+
+    def copy(self):
+        return Dimension(self._name, self._global_size,
+            local_size=self._local_size,
+            lower_extent=self._lower_extent,
+            upper_extent=self._upper_extent,
+            description=self._description,
+            zero_valid=self._zero_valid)
 
     @property
     def name(self):
