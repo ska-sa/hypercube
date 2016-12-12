@@ -121,23 +121,6 @@ class Dimension(object):
                 "it's global size {g}".format(n=self._name,
                     l=self._local_size, g=self._global_size))
 
-        if self.extent_size > self.local_size:
-            msg = ("Dimension '{n}' "
-                "extent range [{el}, {eu}] ({r}) "
-                "is greater than it's local size {l}. "
-                "If this dimension is defined as "
-                "an expression containing multiple "
-                "dimensions, these extents may be "
-                "much larger than the local size. "
-                "Consider ignoring extents by setting "
-                "the 'ignore_extents' flag when "
-                "creating this dimension.".format(
-                    n=self.name, l=self.local_size,
-                    el=self.lower_extent, eu=self.upper_extent,
-                    r=self.extent_size))
-
-            raise ValueError(msg)
-
         extents_valid = (0 <= self.lower_extent <= self.upper_extent
             <= self.global_size)
 
