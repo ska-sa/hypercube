@@ -60,27 +60,24 @@ class Test(unittest.TestCase):
         local_na = na - 2
         local_nchan = nchan // 4
 
-        cube.update_dimension(name='ntime', local_size=local_ntime,
+        cube.update_dimension(name='ntime',
             lower_extent=1, upper_extent=local_ntime)
-        cube.update_dimension(name='na', local_size=local_na,
+        cube.update_dimension(name='na',
             lower_extent=2, upper_extent=local_na)
-        cube.update_dimension(name='nchan', local_size=local_nchan,
+        cube.update_dimension(name='nchan',
             lower_extent=3, upper_extent=local_nchan)
 
         dims = cube.dimensions()
 
         self.assertTrue(dims['ntime'].global_size == ntime)
-        self.assertTrue(dims['ntime'].local_size == local_ntime)
         self.assertTrue(dims['ntime'].lower_extent == 1)
         self.assertTrue(dims['ntime'].upper_extent == local_ntime)
 
         self.assertTrue(dims['na'].global_size == na)
-        self.assertTrue(dims['na'].local_size == local_na)
         self.assertTrue(dims['na'].lower_extent == 2)
         self.assertTrue(dims['na'].upper_extent == local_na)
 
         self.assertTrue(dims['nchan'].global_size == nchan)
-        self.assertTrue(dims['nchan'].local_size == local_nchan)
         self.assertTrue(dims['nchan'].lower_extent ==3)
         self.assertTrue(dims['nchan'].upper_extent == local_nchan)
 
@@ -97,25 +94,20 @@ class Test(unittest.TestCase):
         cube.register_dimension('nchan', nchan)
 
         tdim = cube.dimensions()['ntime']
-        self.assertTrue(tdim.global_size == tdim.local_size)
+        self.assertTrue(tdim.global_size == tdim.extent_size)
 
-        # Check that setting the global size greater than the local size succeeds
+        # Check that setting the global size greater than the extent size succeeds
         cube.update_dimension(name='ntime', global_size=120)
         self.assertTrue(tdim.global_size == 120)
 
-        # Check that setting the global size less than the local size fails
+        # Check that setting the global size less than the extent size fails
         with self.assertRaises(ValueError) as cm:
             cube.update_dimension(name='ntime', global_size=80)
 
-        self.assertTrue('local size {nt}'.format(nt=ntime) in cm.exception.message)
-        self.assertTrue('global size {gs}'.format(gs=80) in cm.exception.message)
-
-        # Check that setting the global_size and local_size less than the upper_extent fails
-        with self.assertRaises(ValueError) as cm:
-            cube.update_dimension(name='ntime', global_size=80, local_size=80)
+        self.assertTrue("Dimension '{}' fails".format('ntime') in cm.exception.message)
 
         # This should succeed
-        cube.update_dimension(name='ntime', global_size=80, local_size=80, upper_extent=80)
+        cube.update_dimension(name='ntime', global_size=80, upper_extent=80)
 
     def test_array_registration_and_reification(self):
         """ Test array registration and reification """
@@ -149,10 +141,10 @@ class Test(unittest.TestCase):
 
         # Update the local size and extents of the time dimension
         local_ntime = ntime//2
-        cube.update_dimension(name='ntime', local_size=local_ntime,
+        cube.update_dimension(name='ntime',
             lower_extent=0, upper_extent=local_ntime)
 
-        # Test that the concrete shape reflects the new local_size
+        # Test that the concrete shape reflects the extent_size
         # after reifying the arrays
         arrays = cube.arrays(reify=True)
         concrete_shape = (local_ntime, nbl, nchan, npol)
@@ -315,11 +307,10 @@ class Test(unittest.TestCase):
         values = [local_ntime, local_na, local_nbl, local_nchan, local_nvis]
 
         for arg, ls in zip(args, values):
-            cube.update_dimension(name=arg, local_size=ls,
-                lower_extent=0, upper_extent=ls)
+            cube.update_dimension(name=arg, lower_extent=0, upper_extent=ls)
 
         # Test that the mutiple argument form works
-        _ntime, _na, _nbl, _nchan, _nvis = cube.dim_local_size(*args)
+        _ntime, _na, _nbl, _nchan, _nvis = cube.dim_extent_size(*args)
 
         self.assertTrue(_ntime == local_ntime)
         self.assertTrue(_nbl == local_nbl)
@@ -388,89 +379,6 @@ class Test(unittest.TestCase):
         S = 0
         for d in cube.dim_iter(('ntime', tsize), ('na', asize)):
             cube.update_dimensions(d)
-            S += A[cube.slice_index('ntime', 'na')].sum()
-
-        self.assertTrue(S == A_sum)
-
-        #=============================
-        # Local Scope Iteration Tests
-        #=============================
-
-        ltime, lna = 20, 27
-
-        # Test that we can iterate over a dimension's local size
-        cube.update_dimension(name='ntime', global_size=ntime,
-            local_size=ltime, lower_extent=0, upper_extent=ltime)
-
-        cube.update_dimension(name='na', global_size=na,
-            local_size=lna, lower_extent=0, upper_extent=lna)
-
-        # Sum over a portion of the array now!
-        A_sum = A[0:ltime,0:lna].sum()
-
-        # Test that iterating over offsets works
-        S = sum(A[ts:te,as_:ae].sum() for (ts, te), (as_, ae) in
-            cube.endpoint_iter(('ntime', tsize), ('na', asize),
-            scope='local_size'))
-        self.assertTrue(S == A_sum)
-
-        # Test that iterating over tuple indices works
-        S = sum(A[i].sum() for i in
-            cube.slice_iter(('ntime', tsize), ('na', asize),
-            scope='local_size'))
-        self.assertTrue(S == A_sum)
-
-        # Test that iterating over destructured tuple indices works
-        S = sum(A[t,a].sum() for t, a in
-            cube.slice_iter(('ntime', tsize), ('na', asize),
-            scope='local_size'))
-        self.assertTrue(S == A_sum)
-
-        # Test that iterating over hypercubes works
-        S = sum(A[c.slice_index('ntime', 'na')].sum() for c in
-            cube.cube_iter(('ntime', tsize), ('na', asize),
-            scope='local_size'))
-        self.assertTrue(S == A_sum)
-
-        # Test that iterating over dimension dictionaries works
-        S = 0
-        for d in cube.dim_iter(('ntime', tsize), ('na', asize),
-            scope='local_size'):
-            cube.update_dimensions(d)
-            S += A[cube.slice_index('ntime', 'na')].sum()
-
-        self.assertTrue(S == A_sum)
-
-        # Test that we can iterate over a dimension's local size
-        cube.update_dimension(name='ntime', global_size=ntime,
-            local_size=ntime, lower_extent=0, upper_extent=ntime)
-
-        cube.update_dimension(name='na', global_size=na,
-            local_size=na, lower_extent=0, upper_extent=na)
-
-        A_sum = A.sum()
-
-        # Test that 'local_size' matches 'global_size' in the default case
-        S = 0
-        for d in cube.dim_iter(('ntime', tsize), ('na', asize),
-            scope='global_size'):
-            cube.update_dimensions(d)
-            local_size = cube.dim_local_size('ntime', 'na')
-            global_size = cube.dim_global_size('ntime', 'na')
-            self.assertTrue(local_size == global_size)
-            S += A[cube.slice_index('ntime', 'na')].sum()
-
-        self.assertTrue(S == A_sum)
-
-        # Test that the dictionary d updates
-        # a dimension's 'local_size'
-        S = 0
-        for d in cube.dim_iter(('ntime', tsize), ('na', asize),
-            scope='global_size', update_local_size=True):
-            cube.update_dimensions(d)
-            local_size = cube.dim_local_size('ntime', 'na')
-            global_size = cube.dim_global_size('ntime', 'na')
-            self.assertTrue(local_size != global_size)
             S += A[cube.slice_index('ntime', 'na')].sum()
 
         self.assertTrue(S == A_sum)

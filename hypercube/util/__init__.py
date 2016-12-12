@@ -57,7 +57,7 @@ def reify_arrays(arrays, dims, copy=True):
         if copy else arrays)
 
     for n, a in arrays.iteritems():
-        a.shape = tuple(dims[v].local_size
-            if isinstance(v, str) else v for v in a.shape)
+        a.shape = tuple(dims[v].extent_size if isinstance(v, str) else v
+            for v in a.shape)
 
     return arrays

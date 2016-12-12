@@ -55,17 +55,14 @@ print('REDUCING LOCAL PROBLEM SIZE\n',
     'Note: extents[1] - extents[0] <= local_size')
 print('\n'*3)
 
-# Reduce local grid width to 1000 and globally handle 1000 - 1256
-cube.update_dimension(name='grid_width',local_size=256,
-    lower_extent=1000, upper_extent=1256)
+# Set grid width extents to 1000 - 1256
+cube.update_dimension(name='grid_width', lower_extent=1000, upper_extent=1256)
 
-# Reduce local grid height to 1000 and globally handle range 1000 - 1256
-cube.update_dimension(name='grid_height', local_size=256,
-    lower_extent=1000, upper_extent=1256)
+# Set grid height extents to 1000 - 1256
+cube.update_dimension(name='grid_height', lower_extent=1000, upper_extent=1256)
 
-# Reduce local number of channels to 128 and globally handle range 600-700
-cube.update_dimension(name='nchan', local_size=128,
-    lower_extent=600, upper_extent=700)
+# Set channel extents 600-700
+cube.update_dimension(name='nchan', lower_extent=600, upper_extent=700)
 
 print (cube)
 
@@ -79,7 +76,7 @@ np_cube.register_arrays(cube.arrays().itervalues())
 hc.create_local_numpy_arrays_on_cube(np_cube)
 
 # Get some dimension information to check our numpy shape size
-grid_width, grid_height, nchan, npol = np_cube.dim_local_size(
+grid_width, grid_height, nchan, npol = np_cube.dim_extent_size(
     'grid_width', 'grid_height', 'nchan', 'npol')
 assert np_cube.main_grid.shape == (grid_width, grid_height, nchan, npol)
 

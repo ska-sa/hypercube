@@ -31,9 +31,6 @@ from tabulate import tabulate
 from hypercube.dims import create_dimension, Dimension
 import hypercube.util as hcu
 
-LOCAL_SIZE = 'local_size'
-GLOBAL_SIZE = 'global_size'
-
 class PropertyDescriptor(object):
     """ Descriptor class for properties """
     def __init__(self, record_key, default=None, ):
@@ -143,8 +140,8 @@ class HyperCube(object):
     def register_dimensions(self, dims):
         """
         >>> slvr.register_dimensions([
-            {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
-            {'name' : 'na', 'local_size' : 3, 'extents' : [2, 7]},
+            {'name' : 'ntime', 'global_size' : 10, 'lower_extent' : 2, 'upper_extent' : 7 },
+            {'name' : 'na', 'global_size' : 3, 'lower_extent' : 2, 'upper_extent' : 7 },
             ])
         """
 
@@ -157,8 +154,8 @@ class HyperCube(object):
     def update_dimensions(self, dims):
         """
         >>> slvr.update_dimensions([
-            {'name' : 'ntime', 'local_size' : 10, 'extents' : [2, 7], 'safety': False },
-            {'name' : 'na', 'local_size' : 3, 'extents' : [2, 7]},
+            {'name' : 'ntime', 'global_size' : 10, 'lower_extent' : 2, 'upper_extent' : 7 },
+            {'name' : 'na', 'global_size' : 3, 'lower_extent' : 2, 'upper_extent' : 7 },
             ])
         """
 
@@ -230,10 +227,6 @@ class HyperCube(object):
         """ Returns a mapping of dimension name to global size """
         return { d.name: d.global_size for d in self._dims.itervalues()}
 
-    def dim_local_size_dict(self):
-        """ Returns a mapping of dimension name to local size """
-        return { d.name: d.local_size for d in self._dims.itervalues()}
-
     def dim_lower_extent_dict(self):
         """ Returns a mapping of dimension name to lower_extent """
         return { d.name: d.lower_extent for d in self._dims.itervalues()}
@@ -252,17 +245,6 @@ class HyperCube(object):
         """
 
         return self._dim_attribute('global_size', *args, **kwargs)
-
-    def dim_local_size(self, *args, **kwargs):
-        """
-        ntime, nbl, nchan = slvr.dim_local_size('ntime, 'nbl', 'nchan')
-
-        or
-
-        ntime, nbl, nchan, nsrc = slvr.dim_local_size('ntime,nbl:nchan nsrc')
-        """
-
-        return self._dim_attribute('local_size', *args, **kwargs)
 
     def dim_lower_extent(self, *args, **kwargs):
         """
@@ -452,7 +434,7 @@ class HyperCube(object):
         """
         Returns a dictionary of arrays. If reify is True,
         it will replace any dimension within the array shape with
-        the local_size of the dimension.
+        the extent_size of the dimension.
         """
         return (self._arrays if not reify else
             hcu.reify_arrays(self._arrays, self.dimensions(copy=False)))
@@ -461,7 +443,7 @@ class HyperCube(object):
         """
         Returns an array object. If reify is True,
         it will replace any dimension within the array shape with
-        the local_size of the dimension.
+        the extent_size of the dimension.
         """
 
         try:
@@ -497,8 +479,10 @@ class HyperCube(object):
 
     def copy(self):
         """ Return a copy of the hypercube """
-        return HyperCube(dimensions=self.dimensions(copy=False),
-            arrays=self.arrays(), properties=self.properties())
+        return HyperCube(
+            dimensions=self.dimensions(copy=False),
+            arrays=self.arrays(),
+            properties=self.properties())
 
     def gen_dimension_table(self):
         """
@@ -506,7 +490,7 @@ class HyperCube(object):
         together with headers - for use in __str__
         """
         headers = ['Dimension Name', 'Description',
-            'Global Size', 'Local Size', 'Extents']
+            'Global Size', 'Extents']
 
         table = []
         for dimval in sorted(self.dimensions(copy=False).itervalues(),
@@ -515,7 +499,6 @@ class HyperCube(object):
             table.append([dimval.name,
                 dimval.description,
                 dimval.global_size,
-                dimval.local_size,
                 (dimval.lower_extent, dimval.upper_extent)])
 
         return table, headers
@@ -602,12 +585,6 @@ class HyperCube(object):
             dim_strides: list
                 list of (dimension, stride) tuples
 
-        Keyword Arguments:
-            scope: string
-                Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'global_size', but
-                can also be 'local_size'.
-
         Returns:
             An iterator
         """
@@ -617,8 +594,7 @@ class HyperCube(object):
             return ((i, min(i+stride, size)) for i in r)
 
         dims = self.dimensions(copy=False)
-        scope = kwargs.get('scope', GLOBAL_SIZE)
-        gens = (_dim_endpoints(getattr(dims[d], scope), s) for d, s in dim_strides)
+        gens = (_dim_endpoints(dims[d].global_size, s) for d, s in dim_strides)
         return itertools.product(*gens)
 
     def slice_iter(self, *dim_strides, **kwargs):
@@ -641,12 +617,6 @@ class HyperCube(object):
         Arguments:
             dim_strides: list
                 list of (dimension, stride) tuples
-
-        Keyword Arguments:
-            scope: string
-                Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'global_size', but
-                can also be 'local_size'.
 
         Returns:
             An iterator
@@ -674,16 +644,6 @@ class HyperCube(object):
             dim_strides: list
                 list of (dimension, stride) tuples
 
-        Keyword Arguments:
-            scope: string
-                Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'global_size', but
-                can also be 'local_size'.
-            update_local_size : boolean
-                If True and scope is 'global_size', the returned dictionaries
-                will contain a 'local_size' key, set to the difference of
-                the lower and upper extents
-
         Returns:
             An iterator
         """
@@ -693,24 +653,12 @@ class HyperCube(object):
 
         def _create_dim_dicts(*args):
             return tuple({ 'name': d,
-                'lower_extent': s, 'upper_extent': e }
-                for (d, (s, e)) in args)
-
-        def _create_dim_dicts_with_local(*args):
-            return tuple({ 'name': d, 'local_size' : e - s,
-                'lower_extent': s, 'upper_extent': e }
-                for (d, (s, e)) in args)
-
-        is_scope_global = kwargs.get('scope', GLOBAL_SIZE) == GLOBAL_SIZE
-        local_update_requested = kwargs.get('update_local_size', False)
-
-        if is_scope_global and local_update_requested:
-            f = _create_dim_dicts_with_local
-        else:
-            f = _create_dim_dicts
+                    'lower_extent': s,
+                    'upper_extent': e
+                } for (d, (s, e)) in args)
 
         # Return a tuple-dict-creating generator
-        return (f(*zip(dims, s)) for s
+        return (_create_dim_dicts(*zip(dims, s)) for s
             in self.endpoint_iter(*dim_strides, **kwargs))
 
     def cube_iter(self, *dim_strides, **kwargs):
@@ -725,17 +673,11 @@ class HyperCube(object):
 
         >>> A = np.ones(size=(100, 4))
         >>> for c in cube.cube_iter(('ntime', 10), ('nchan', 4))
-        >>>     assert c.dim_local_size('ntime', 'nchan') == (10, 4)
+        >>>     assert c.dim_extent_size('ntime', 'nchan') == (10, 4)
 
         Arguments:
             dim_strides: list
                 list of (dimension, stride) tuples
-
-        Keyword Arguments:
-            scope: string
-                Governs whether iteration occurs over the global or
-                local dimension space. Defaults to 'global_size', but
-                can also be 'local_size'.
 
         Returns:
             An iterator
@@ -743,11 +685,11 @@ class HyperCube(object):
         """
         def _make_cube(dims, arrays, *args):
             """
-            Create a hypercube given reified dimensions and a list of
+            Create a hypercube given dimensions and a list of
             (dim_name, dim_slice) tuples
             """
 
-            # Create new hypercube, registering everything in rdims
+            # Create new hypercube, registering everything in dims
             cube = HyperCube()
             cube.register_dimensions(dims)
             cube.register_arrays(arrays)
@@ -755,7 +697,6 @@ class HyperCube(object):
             # Now update dimensions given slice information
             for (d, (s, e)) in args:
                 cube.update_dimension(name=d,
-                    local_size=dims[d].local_size,
                     global_size=dims[d].global_size,
                     lower_extent=s, upper_extent=e)
 

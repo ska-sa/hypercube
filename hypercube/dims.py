@@ -18,9 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-from attrdict import AttrDict
-import numpy as np
-
 DEFAULT_DESCRIPTION = 'The FOURTH dimension!'
 
 def create_dimension(name, dim_data, **kwargs):
@@ -33,10 +30,10 @@ def create_dimension(name, dim_data, **kwargs):
     return dim
 
 class Dimension(object):
-    __slots__ = ['_name', '_global_size', '_local_size',
+    __slots__ = ['_name', '_global_size',
         '_lower_extent', '_upper_extent', '_description']
 
-    def __init__(self, name, global_size, local_size=None,
+    def __init__(self, name, global_size,
             lower_extent=None, upper_extent=None,
             description=None):
         """
@@ -47,14 +44,11 @@ class Dimension(object):
         self._lower_extent = 0 if lower_extent is None else lower_extent
         self._upper_extent = (global_size if upper_extent is None
                                     else upper_extent)
-        self._local_size =  (global_size if local_size is None
-                                    else local_size)
         self._description = (DEFAULT_DESCRIPTION if description is None
                                     else description)
 
     def copy(self):
         return Dimension(self._name, self._global_size,
-            local_size=self._local_size,
             lower_extent=self._lower_extent,
             upper_extent=self._upper_extent,
             description=self._description)
@@ -66,10 +60,6 @@ class Dimension(object):
     @property
     def global_size(self):
         return self._global_size
-
-    @property
-    def local_size(self):
-        return self._local_size
 
     @property
     def lower_extent(self):
@@ -91,19 +81,16 @@ class Dimension(object):
         # Note description is left out
         return (self.name == other.name and
             self.global_size == other.global_size and
-            self.local_size == other.local_size and
             self.lower_extent == other.lower_extent and
             self.upper_extent == other.upper_extent)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def update(self, global_size=None, local_size=None,
-        lower_extent=None, upper_extent=None,
+    def update(self, global_size=None, lower_extent=None, upper_extent=None,
         description=None):
 
         if global_size is not None: self._global_size = global_size
-        if local_size is not None: self._local_size = local_size
         if lower_extent is not None: self._lower_extent = lower_extent
         if upper_extent is not None: self._upper_extent = upper_extent
         if description is not None: self._description = description
@@ -114,13 +101,6 @@ class Dimension(object):
     def validate(self):
         """ Validate the contents of a dimension data dictionary """
 
-        # Validate dimensions
-        if self.local_size > self.global_size:
-            raise ValueError("Dimension '{n}' "
-                "local size {l} is greater than "
-                "it's global size {g}".format(n=self._name,
-                    l=self._local_size, g=self._global_size))
-
         extents_valid = (0 <= self.lower_extent <= self.upper_extent
             <= self.global_size)
 
@@ -130,8 +110,7 @@ class Dimension(object):
                     el=self.lower_extent, eu=self.upper_extent))
 
     def __str__(self):
-        return ("['{n}': global: {gs} local: {ls} "
-            "lower: {el} upper: {eu}]").format(
-                n=self.name, gs=self.global_size, ls=self.local_size,
+        return ("['{n}': global: {gs} lower: {el} upper: {eu}]").format(
+                n=self.name, gs=self.global_size,
                 el=self.lower_extent, eu=self.upper_extent)
 
