@@ -34,12 +34,11 @@ def create_dimension(name, dim_data, **kwargs):
 
 class Dimension(object):
     __slots__ = ['_name', '_global_size', '_local_size',
-        '_lower_extent', '_upper_extent',
-        '_description', '_zero_valid']
+        '_lower_extent', '_upper_extent', '_description']
 
     def __init__(self, name, global_size, local_size=None,
             lower_extent=None, upper_extent=None,
-            description=None, zero_valid=True):
+            description=None):
         """
         Create a Dimension from supplied arguments
         """
@@ -52,15 +51,13 @@ class Dimension(object):
                                     else local_size)
         self._description = (DEFAULT_DESCRIPTION if description is None
                                     else description)
-        self._zero_valid = zero_valid
 
     def copy(self):
         return Dimension(self._name, self._global_size,
             local_size=self._local_size,
             lower_extent=self._lower_extent,
             upper_extent=self._upper_extent,
-            description=self._description,
-            zero_valid=self._zero_valid)
+            description=self._description)
 
     @property
     def name(self):
@@ -90,32 +87,26 @@ class Dimension(object):
     def description(self):
         return self._description
 
-    @property
-    def zero_valid(self):
-        return self._zero_valid
-
     def __eq__(self, other):
         # Note description is left out
         return (self.name == other.name and
             self.global_size == other.global_size and
             self.local_size == other.local_size and
             self.lower_extent == other.lower_extent and
-            self.upper_extent == other.upper_extent and
-            self.zero_valid == other.zero_valid)
+            self.upper_extent == other.upper_extent)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def update(self, global_size=None, local_size=None,
         lower_extent=None, upper_extent=None,
-        description=None, zero_valid=None):
+        description=None):
 
         if global_size is not None: self._global_size = global_size
         if local_size is not None: self._local_size = local_size
         if lower_extent is not None: self._lower_extent = lower_extent
         if upper_extent is not None: self._upper_extent = upper_extent
         if description is not None: self._description = description
-        if zero_valid is not None: self._zero_valid = zero_valid
 
         # Check that we've been given valid values
         self.validate()
@@ -147,18 +138,13 @@ class Dimension(object):
 
             raise ValueError(msg)
 
-        if self.zero_valid:
-            assert (0 <= self.lower_extent <= self.upper_extent
-                <= self.global_size), (
-                "Dimension '{d}', global size {gs}, extents [{el}, {eu}]"
-                    .format(d=self.name, gs=self.global_size,
-                        el=self.lower_extent, eu=self.upper_extent))
-        else:
-            assert (0 < self.lower_extent <= self.upper_extent
-                <= self.global_size), (
-                "Dimension '{d}', global size {gs}, extents [{el}, {eu}]"
-                    .format(d=self.name, gs=self.global_size,
-                        el=self.lower_extent, eu=self.upper_extent))
+        extents_valid = (0 <= self.lower_extent <= self.upper_extent
+            <= self.global_size)
+
+        if not extents_valid:
+            raise ValueError("Dimension '{d}' fails 0 <= {el} <= {eu} <= {gs}"
+                .format(d=self.name, gs=self.global_size,
+                    el=self.lower_extent, eu=self.upper_extent))
 
     def __str__(self):
         return ("['{n}': global: {gs} local: {ls} "
