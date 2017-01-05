@@ -106,10 +106,6 @@ class HyperCube(object):
             description : string
                 The description for this dimension.
                 e.g. 'Number of timesteps'.
-            local_size : integer or None
-                The local size of this dimension
-                on this solver. If None, set to
-                the global_size.
             lower_extent : integer or None
                 The lower extent of this dimension
                 within the global space
@@ -127,7 +123,7 @@ class HyperCube(object):
         if name in self._dims:
             raise AttributeError((
                 "Attempted to register dimension '{n}'' "
-                "as an attribute of the solver, but "
+                "as an attribute of the cube, but "
                 "it already exists. Please choose "
                 "a different name!").format(n=name))
 
@@ -311,7 +307,7 @@ class HyperCube(object):
         # Complain if array exists
         if name in self._arrays:
             raise ValueError(('Array %s is already registered '
-                'on this solver object.') % name)
+                'on this cube object.') % name)
 
         # OK, create a record for this array
         A = self._arrays[name] = AttrDict(name=name,
@@ -361,7 +357,7 @@ class HyperCube(object):
         """
         if name in self._properties:
             raise ValueError(('Property %s is already registered '
-                'on this solver object.') % name)
+                'on this cube object.') % name)
 
         P = self._properties[name] = AttrDict(name=name,
             dtype=dtype, default=default)
@@ -409,7 +405,7 @@ class HyperCube(object):
 
         >>> D = [
             { 'name':'ref_wave','dtype':np.float32,
-                'default':1.41e6, 'registrant':'solver' },
+                'default':1.41e6 },
         ]
         """
         if isinstance(properties, collections.Mapping):
@@ -428,7 +424,7 @@ class HyperCube(object):
             return self._properties[name]
         except KeyError:
             raise KeyError("Property '{n}' is not registered "
-                "on this solver".format(n=name)), None, sys.exc_info()[2]
+                "on this cube".format(n=name)), None, sys.exc_info()[2]
 
     def arrays(self, reify=False):
         """
@@ -451,7 +447,7 @@ class HyperCube(object):
                 hcu.reify_arrays({name : self._arrays[name]},
                     self.dimensions(copy=False))[name])
         except KeyError:
-            raise KeyError("Array '{n}' is not registered on this solver"
+            raise KeyError("Array '{n}' is not registered on this cube"
                 .format(n=name)), None, sys.exc_info()[2]
 
     def dimensions(self, copy=True):
@@ -475,7 +471,7 @@ class HyperCube(object):
             return create_dimension(name, self._dims[name]) if copy else self._dims[name]
         except KeyError:
             raise KeyError("Dimension '{n}' is not registered "
-                "on this solver".format(n=name)), None, sys.exc_info()[2]
+                "on this cube".format(n=name)), None, sys.exc_info()[2]
 
     def copy(self):
         """ Return a copy of the hypercube """
