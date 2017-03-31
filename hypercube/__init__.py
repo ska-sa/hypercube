@@ -19,6 +19,7 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 from hypercube.base_cube import HyperCube
+from hypercube.dims import Dimension
 
 from hypercube.array_factory import (
     create_local_arrays,
