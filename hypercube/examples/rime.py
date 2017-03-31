@@ -40,9 +40,38 @@ cube.register_dimension('nvis', nvis, description='Visibilities')
 
 # Register visibility and UVW arrays
 cube.register_array('lm', ('nsrc', 2), dtype=np.float32)
-cube.register_array('visibilities', ('nvis', 'npol'), dtype=np.complex128)
+cube.register_array('visibilities', ('ntime', 'nbl', 'nchan', 'npol'), dtype=np.complex128)
 cube.register_array('flag', ('ntime', 'nbl', 'nchan', 'npol'), dtype=np.int32)
 cube.register_array('weight', ('ntime', 'nbl', 'nchan', 'npol'), dtype=np.float64)
 cube.register_array('uvw', ('ntime', 'nbl', 3), dtype=np.complex128)
+
+# Iterate over time, baseline and channel
+# This is like a 3 level for loop
+iter_dims = ('ntime', 'nbl', 'nchan')
+iter_strides = (100, 24, 64)
+iter_args = zip(iter_dims, iter_strides)
+
+# Do the iteration, updating the cube with extent
+# and chunk size information
+for i, d in enumerate(cube.dim_iter(*iter_args)):
+    cube.update_dimensions(d)
+    print 'extents', zip(iter_dims, cube.dim_extents(*iter_dims))
+    # Query the time dimension
+    print 'ntime dimension', cube.dimension('ntime')
+    # Query the shape of the visibilities array.
+    # First version gives the abstract shape (defined above)
+    # Second reifies it with dimension information
+    print 'abstract visibilities shape', cube.array('visibilities').shape
+    print 'reified visibilities shape', cube.array('visibilities', reify=True).shape
+
+    # Expanded version of cube.dim_extents
+    #print zip(iter_dims, cube.dim_lower_extent(*iter_dims))
+    #print zip(iter_dims, cube.dim_upper_extent(*iter_dims))
+
+    # These won't change during the loop, except local size
+    # at the end
+    #print zip(iter_dims, cube.dim_local_size(*iter_dims))
+    #print zip(iter_dims, cube.dim_global_size(*iter_dims))
+
 
 print cube

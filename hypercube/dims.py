@@ -30,6 +30,9 @@ def create_dimension(name, dim_data, **kwargs):
     return dim
 
 class Dimension(object):
+    """
+    The Dimension class describes a hypercube dimension.
+    """
     __slots__ = ['_name', '_global_size',
         '_lower_extent', '_upper_extent', '_description']
 
@@ -38,6 +41,18 @@ class Dimension(object):
             description=None):
         """
         Create a Dimension from supplied arguments
+
+        :param name: Dimension name
+        :type name: str
+        :param global_size: Global dimension size
+        :type global_size: int
+        :param local_extent: Lower dimension extent
+        :type local_extent: int
+        :param upper_extent: Upper dimension extent
+        :type upper_extent: int
+        :param description: Dimension description
+        :type description: str
+
         """
         self._name = name
         self._global_size = global_size
@@ -48,6 +63,7 @@ class Dimension(object):
                                     else description)
 
     def copy(self):
+        """ :rtype: A copy of the dimension """
         return Dimension(self._name, self._global_size,
             lower_extent=self._lower_extent,
             upper_extent=self._upper_extent,
@@ -55,26 +71,35 @@ class Dimension(object):
 
     @property
     def name(self):
+        """ Dimension name """
         return self._name
 
     @property
     def global_size(self):
+        """ Global dimension size """
         return self._global_size
 
     @property
     def lower_extent(self):
+        """ Lower dimension extent """
         return self._lower_extent
 
     @property
     def upper_extent(self):
+        """ Upper dimension extent """
         return self._upper_extent
 
     @property
     def extent_size(self):
+        """
+        Size of the dimension extents.
+        Equal to :obj:`~Dimension.upper_extent` - :obj:`~Dimension.lower_extent`
+        """
         return self.upper_extent - self.lower_extent
 
     @property
     def description(self):
+        """ Dimension description """
         return self._description
 
     def __eq__(self, other):
@@ -89,6 +114,19 @@ class Dimension(object):
 
     def update(self, global_size=None, lower_extent=None, upper_extent=None,
         description=None):
+        """
+        Update the dimension properties
+
+        :param global_size: Global dimension size
+        :type global_size: int
+        :param local_extent: Lower dimension extent
+        :type local_extent: int
+        :param upper_extent: Upper dimension extent
+        :type upper_extent: int
+        :param description: Dimension description
+        :type description: str
+
+        """
 
         if global_size is not None: self._global_size = global_size
         if lower_extent is not None: self._lower_extent = lower_extent
