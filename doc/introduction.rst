@@ -10,7 +10,7 @@ To achieve this parallelism it is necessary to subdivide this data into tiles,
 large enough to fit within the memory budgets of individual nodes and GPUs.
 
 hypercube is an simple abstraction that uses labelled Dimensions
-and abstract numpy array_ shapes, defined in terms of these Dimensions,
+and abstract numpy_ array shapes, defined in terms of these Dimensions,
 to:
 
     * Reason about memory budgets

@@ -217,7 +217,7 @@ class HyperCube(object):
         Returns a list of dimension attribute attr, for the
         dimensions specified as strings in args.::
 
-            ntime, nbl, nchan = cube._dim_attribute('global_size', ntime, 'nbl', 'nchan')
+            ntime, nbl, nchan = cube._dim_attribute('global_size', 'ntime', 'nbl', 'nchan')
 
         or::
 
@@ -253,9 +253,9 @@ class HyperCube(object):
 
     def dim_global_size(self, *args, **kwargs):
         """
-        Return the global size of the dimensions in *args.::
+        Return the global size of the dimensions in args.::
 
-            ntime, nbl, nchan = cube.dim_global_size('ntime, 'nbl', 'nchan')
+            ntime, nbl, nchan = cube.dim_global_size('ntime', 'nbl', 'nchan')
 
         or::
 
@@ -266,10 +266,10 @@ class HyperCube(object):
 
     def dim_lower_extent(self, *args, **kwargs):
         """
-        Returns the lower extent of the dimensions in *args.::
+        Returns the lower extent of the dimensions in args.::
 
 
-            t_ex, bl_ex, ch_ex = cube.dim_lower_extent('ntime,\ 'nbl', 'nchan')
+            t_ex, bl_ex, ch_ex = cube.dim_lower_extent('ntime', 'nbl', 'nchan')
 
         or::
 
@@ -283,9 +283,9 @@ class HyperCube(object):
 
     def dim_upper_extent(self, *args, **kwargs):
         """
-        Returns the upper extent of the dimensions in *args.::
+        Returns the upper extent of the dimensions in args.::
 
-            t_ex, bl_ex, ch_ex = cube.dim_upper_extent('ntime, 'nbl', 'nchan')
+            t_ex, bl_ex, ch_ex = cube.dim_upper_extent('ntime', 'nbl', 'nchan')
 
         or::
 
@@ -296,9 +296,9 @@ class HyperCube(object):
 
     def dim_extents(self, *args, **kwargs):
         """
-        Returns extent tuples of the dimensions in *args.::
+        Returns extent tuples of the dimensions in args.::
 
-            (tl, tu), (bl, bu) = cube.dim_extents('ntime, 'nbl')
+            (tl, tu), (bl, bu) = cube.dim_extents('ntime', 'nbl')
 
         or::
 
@@ -317,9 +317,9 @@ class HyperCube(object):
 
     def dim_extent_size(self, *args, **kwargs):
         """
-        Returns extent sizes of the dimensions in *args.::
+        Returns extent sizes of the dimensions in args.::
 
-            ts, bs, cs = cube.dim_extent_size('ntime, 'nbl', 'nchan')
+            ts, bs, cs = cube.dim_extent_size('ntime', 'nbl', 'nchan')
 
         or::
 
