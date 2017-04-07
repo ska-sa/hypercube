@@ -285,13 +285,13 @@ class HyperCube(object):
 
         .. code-block:: python
 
-        ntime, nbl, nchan = cube.dim_global_size('ntime', 'nbl', 'nchan')
+            ntime, nbl, nchan = cube.dim_global_size('ntime', 'nbl', 'nchan')
 
         or
 
         .. code-block:: python
 
-        ntime, nbl, nchan, nsrc = cube.dim_global_size('ntime,nbl:nchan nsrc')
+            ntime, nbl, nchan, nsrc = cube.dim_global_size('ntime,nbl:nchan nsrc')
 
         """
 
