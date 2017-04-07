@@ -98,7 +98,7 @@ class HyperCube(object):
         """
         Registers a dimension on this cube.
 
-        ::
+        .. code-block:: python
 
             cube.register_dimension('ntime', 10000,
                         decription="Number of Timesteps",
@@ -215,11 +215,15 @@ class HyperCube(object):
     def _dim_attribute(self, attr, *args, **kwargs):
         """
         Returns a list of dimension attribute attr, for the
-        dimensions specified as strings in args.::
+        dimensions specified as strings in args.
+
+        .. code-block:: python
 
             ntime, nbl, nchan = cube._dim_attribute('global_size', 'ntime', 'nbl', 'nchan')
 
-        or::
+        or
+
+        .. code-block:: python
 
             ntime, nbl, nchan, nsrc = cube._dim_attribute('global_size', 'ntime,nbl:nchan nsrc')
         """
@@ -253,11 +257,15 @@ class HyperCube(object):
 
     def dim_global_size(self, *args, **kwargs):
         """
-        Return the global size of the dimensions in args.::
+        Return the global size of the dimensions in args.
+
+        .. code-block:: python
 
             ntime, nbl, nchan = cube.dim_global_size('ntime', 'nbl', 'nchan')
 
-        or::
+        or
+
+        .. code-block:: python
 
             ntime, nbl, nchan, nsrc = cube.dim_global_size('ntime,nbl:nchan nsrc')
         """
@@ -266,12 +274,15 @@ class HyperCube(object):
 
     def dim_lower_extent(self, *args, **kwargs):
         """
-        Returns the lower extent of the dimensions in args.::
+        Returns the lower extent of the dimensions in args.
 
+        .. code-block:: python
 
             t_ex, bl_ex, ch_ex = cube.dim_lower_extent('ntime', 'nbl', 'nchan')
 
-        or::
+        or
+
+        .. code-block:: python
 
             t_ex, bl_ex, ch_ex, src_ex = cube.dim_lower_extent('ntime,nbl:nchan nsrc')
         """
@@ -283,11 +294,15 @@ class HyperCube(object):
 
     def dim_upper_extent(self, *args, **kwargs):
         """
-        Returns the upper extent of the dimensions in args.::
+        Returns the upper extent of the dimensions in args.
+
+        .. code-block:: python
 
             t_ex, bl_ex, ch_ex = cube.dim_upper_extent('ntime', 'nbl', 'nchan')
 
-        or::
+        or
+
+        .. code-block:: python
 
             t_ex, bl_ex, ch_ex, src_ex = cube.dim_upper_extent('ntime,nbl:nchan nsrc')
         """
@@ -296,11 +311,15 @@ class HyperCube(object):
 
     def dim_extents(self, *args, **kwargs):
         """
-        Returns extent tuples of the dimensions in args.::
+        Returns extent tuples of the dimensions in args.
+
+        .. code-block:: python
 
             (tl, tu), (bl, bu) = cube.dim_extents('ntime', 'nbl')
 
-        or::
+        or
+
+        .. code-block:: python
 
             (tl, tu), (bl, bu) = cube.dim_upper_extent('ntime,nbl')
         """
@@ -317,11 +336,15 @@ class HyperCube(object):
 
     def dim_extent_size(self, *args, **kwargs):
         """
-        Returns extent sizes of the dimensions in args.::
+        Returns extent sizes of the dimensions in args.
+
+        .. code-block:: python
 
             ts, bs, cs = cube.dim_extent_size('ntime', 'nbl', 'nchan')
 
-        or::
+        or
+
+        .. code-block:: python
 
             ts, bs, cs, ss = cube.dim_extent_size('ntime,nbl:nchan nsrc')
         """
@@ -337,7 +360,9 @@ class HyperCube(object):
 
     def register_array(self, name, shape, dtype, **kwargs):
         """
-        Register an array with this cube.::
+        Register an array with this cube.
+
+        .. code-block:: python
 
             cube.register_array("model_vis", ("ntime", "nbl", "nchan", 4), np.complex128)
 
@@ -367,7 +392,9 @@ class HyperCube(object):
         """
         Register arrays using a list of dictionaries defining the arrays.
 
-        The list should itself contain dictionaries. i.e.::
+        The list should itself contain dictionaries. i.e.
+
+        .. code-block:: python
 
             D = [{ 'name':'uvw', 'shape':(3,'ntime','nbl'),'dtype':np.float32 },
                 { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }]
@@ -385,7 +412,9 @@ class HyperCube(object):
 
     def register_property(self, name, dtype, default, **kwargs):
         """
-        Registers a property with this Solver object::
+        Registers a property with this Solver object
+
+        .. code-block:: python
 
             cube.register_property("reference_frequency", np.float64, 1.4e9)
 
@@ -446,7 +475,9 @@ class HyperCube(object):
             describingg properties
         :type properties: A dictionary or list
 
-        The dictionary should itself contain dictionaries. i.e.::
+        The dictionary should itself contain dictionaries. i.e.
+
+        .. code-block:: python
 
             D = [
                 { 'name':'ref_wave','dtype':np.float32,
@@ -623,7 +654,9 @@ class HyperCube(object):
 
         For example, the following call effectively produces
         2 loops over the 'ntime' and 'nchan' dimensions
-        in chunks of 10 and 4 respectively.::
+        in chunks of 10 and 4 respectively.
+
+        .. code-block:: python
 
             for (ts, te), (cs, ce) in cube.endpoint_iter(('ntime', 10), ('nchan', 4))
                 print 'Time range [{ts},{te}] Channel Range [{cs},{ce}]'.format(
@@ -653,7 +686,9 @@ class HyperCube(object):
 
         For example, the following call effectively produces
         2 loops over the 'ntime' and 'nchan' dimensions
-        in chunks of 10 and 4 respectively.::
+        in chunks of 10 and 4 respectively.
+
+        .. code-block:: python
 
             A = np.ones(size=(100, 4))
             for ts, cs in cube.endpoint_iter(('ntime', 10), ('nchan', 4))
@@ -681,7 +716,9 @@ class HyperCube(object):
 
         For example, the following call effectively produces
         2 loops over the 'ntime' and 'nchan' dimensions
-        in chunks of 10 and 4 respectively.::
+        in chunks of 10 and 4 respectively.
+
+        .. code-block:: python
 
             for d in cube.dim_iter(('ntime', 10), ('nchan', 4))
                 cube.update_dimensions(d)
