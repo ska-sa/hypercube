@@ -80,17 +80,21 @@ class HyperCube(object):
 
     def bytes_required(self):
         """
-        :rtype: Estimated number of bytes required by arrays registered
-                on the cube, taking their extents into account.
+        Returns
+        -------
+        int
+            Estimated number of bytes required by arrays registered
+            on the cube, taking their extents into account.
         """
         return np.sum([hcu.array_bytes(a) for a
             in self.arrays(reify=True).itervalues()])
 
     def mem_required(self):
         """
-        :rtype: String approximately describing the memory
-                required by arrays registered on the cube,
-                taking their extents into account.
+        str
+            String approximately describing the memory
+            required by arrays registered on the cube,
+            taking their extents into account.
         """
         return hcu.fmt_bytes(self.bytes_required())
 
@@ -104,26 +108,32 @@ class HyperCube(object):
                         decription="Number of Timesteps",
                         lower_extent=100, upper_extent=200)
 
-        :param dim_data: if an integer, this will be used to
+        Parameters
+        ----------
+        dim_data : int or :class:`~hypercube.dims.Dimension`
+            if an integer, this will be used to
             define the global_size of the dimension
             and possibly other attributes if they are
             not present in kwargs.
             If a Dimension, it will be updated with
             any appropriate keyword arguments
-        :type dim_data: int or :class:`~hypercube.dims.Dimension`
-
-        :param description: The description for this dimension.
+        description : str
+            The description for this dimension.
             e.g. 'Number of timesteps'.
-        :type description: str
+        lower_extent : int
+            The lower extent of this dimension
+            within the global space
+        upper_extent : int
+            The upper extent of this dimension
+            within the global space
+        name : Dimension name
 
-        :param lower_extent: The lower extent of this dimension
-                within the global space
-        :type lower_extent: int
-        :param upper_extent: The upper extent of this dimension
-                within the global space
-        :type upper_extent: int
 
-        :rtype: A :class:`~hypercube.dims.Dimension` object
+        Returns
+        -------
+        :class:`~hypercube.dims.Dimension`
+            A hypercube Dimension
+
         """
 
         if name in self._dims:
@@ -143,15 +153,21 @@ class HyperCube(object):
         """
         Register multiple dimensions on the cube.
 
-        :param dims: A list or dictionary of dimensions
-        :type dims: list or dict
-
-        ::
+        .. code-block:: python
 
             cube.register_dimensions([
-                {'name' : 'ntime', 'global_size' : 10, 'lower_extent' : 2, 'upper_extent' : 7 },
-                {'name' : 'na', 'global_size' : 3, 'lower_extent' : 2, 'upper_extent' : 7 },
+                {'name' : 'ntime', 'global_size' : 10,
+                'lower_extent' : 2, 'upper_extent' : 7 },
+                {'name' : 'na', 'global_size' : 3,
+                'lower_extent' : 2, 'upper_extent' : 7 },
             ])
+
+
+        Parameters
+        ----------
+        dims : list or dict
+            A list or dictionary of dimensions
+
         """
 
         if isinstance(dims, collections.Mapping):
@@ -164,15 +180,19 @@ class HyperCube(object):
         """
         Update multiple dimension on the cube.
 
-        :param dims: A list or dictionary of dimension updates
-        :type dims: list or dict:
-
-        ::
+        .. code-block:: python
 
             cube.update_dimensions([
-                {'name' : 'ntime', 'global_size' : 10, 'lower_extent' : 2, 'upper_extent' : 7 },
-                {'name' : 'na', 'global_size' : 3, 'lower_extent' : 2, 'upper_extent' : 7 },
+                {'name' : 'ntime', 'global_size' : 10,
+                'lower_extent' : 2, 'upper_extent' : 7 },
+                {'name' : 'na', 'global_size' : 3,
+                'lower_extent' : 2, 'upper_extent' : 7 },
             ])
+
+        Parameters
+        ----------
+        dims : list or dict:
+            A list or dictionary of dimension updates
         """
 
         if isinstance(dims, collections.Mapping):
@@ -193,9 +213,13 @@ class HyperCube(object):
         """
         Update the dimension size and extents.
 
-        :param update_dict: A dictionary containing keywords passed through to
+        Parameters
+        ----------
+        **update_dict : : dict: dict
+            A dictionary containing keywords passed through to
             :meth:`~hypercube.dims.Dimension.update`
-        :type update_dict: dict
+        name : str
+            Name of the dimension to update
         """
         if not name:
             raise AttributeError("A dimension name is required to update "
@@ -261,13 +285,14 @@ class HyperCube(object):
 
         .. code-block:: python
 
-            ntime, nbl, nchan = cube.dim_global_size('ntime', 'nbl', 'nchan')
+        ntime, nbl, nchan = cube.dim_global_size('ntime', 'nbl', 'nchan')
 
         or
 
         .. code-block:: python
 
-            ntime, nbl, nchan, nsrc = cube.dim_global_size('ntime,nbl:nchan nsrc')
+        ntime, nbl, nchan, nsrc = cube.dim_global_size('ntime,nbl:nchan nsrc')
+
         """
 
         return self._dim_attribute('global_size', *args, **kwargs)
@@ -366,14 +391,14 @@ class HyperCube(object):
 
             cube.register_array("model_vis", ("ntime", "nbl", "nchan", 4), np.complex128)
 
-        :param name: Array name
-        :type name: str
-        :param shape: Array shape schema
-        :type shape: A tuple containing either Dimension names or ints
-        :param dtype: Array data type
-        :type dype: numpy dtype
-
-        :rtype: A dictionary describing this array.
+        Parameters
+        ----------
+        name : str
+            Array name
+        shape : A tuple containing either Dimension names or ints
+            Array shape schema
+        dtype :
+            Array data type
         """
 
         # Complain if array exists
@@ -399,9 +424,10 @@ class HyperCube(object):
             D = [{ 'name':'uvw', 'shape':(3,'ntime','nbl'),'dtype':np.float32 },
                 { 'name':'lm', 'shape':(2,'nsrc'),'dtype':np.float32 }]
 
-        :param arrays: A list or dictionary of dictionaries describing arrays.
-        :type arrays: A list or dict.
-
+        Parameters
+        ----------
+        arrays : A list or dict.
+            A list or dictionary of dictionaries describing arrays.
         """
 
         if isinstance(arrays, collections.Mapping):
@@ -418,12 +444,15 @@ class HyperCube(object):
 
             cube.register_property("reference_frequency", np.float64, 1.4e9)
 
-        :param name: The name of this property.
-        :type name: str
-        :param dtype: Numpy data type
-        :type dtype: Numpy data type
-        :param default: Default value for this value
-        :type default: Should be convertable to dtype
+        Parameters
+        ----------
+        name : str
+            The name of this property.
+        dtype : Numpy data type
+            Numpy data type
+        default : Should be convertable to dtype
+            Default value for this value
+
         """
         if name in self._properties:
             raise ValueError(('Property %s is already registered '
@@ -471,10 +500,6 @@ class HyperCube(object):
         """
         Register properties using a list defining the properties.
 
-        :param properties: A dictionary or list of dictionaries
-            describingg properties
-        :type properties: A dictionary or list
-
         The dictionary should itself contain dictionaries. i.e.
 
         .. code-block:: python
@@ -483,6 +508,13 @@ class HyperCube(object):
                 { 'name':'ref_wave','dtype':np.float32,
                     'default':1.41e6 },
             ]
+
+        Parameters
+        ----------
+        properties : A dictionary or list
+            A dictionary or list of dictionaries
+            describing properties
+
         """
         if isinstance(properties, collections.Mapping):
             properties = properties.itervalues()
@@ -491,11 +523,24 @@ class HyperCube(object):
             self.register_property(**prop)
 
     def properties(self):
-        """ :rtype: Returns a dictionary of properties """
+        """ Returns a dictionary of properties """
         return self._properties
 
     def property(self, name):
-        """ :rtype:  Returns a property """
+        """
+
+        Parameters
+        ----------
+        name : str
+            Property to return
+
+
+        Returns
+        -------
+        dict
+            A property dictionary
+
+        """
         try:
             return self._properties[name]
         except KeyError:
@@ -504,18 +549,47 @@ class HyperCube(object):
 
     def arrays(self, reify=False):
         """
-        :rtype: Returns a dictionary of arrays. If reify is True,
-            it will replace any dimension within the array shape with
-            the extent_size of the dimension.
+
+        Parameters
+        ----------
+        reify : bool
+             If True, converts abstract array schemas into
+            concrete shapes.
+
+        Returns
+        -------
+        dict
+            A dictionary of array dictionaries, keyed
+            on array name
+
         """
         return (self._arrays if not reify else
             hcu.reify_arrays(self._arrays, self.dimensions(copy=False)))
 
     def array(self, name, reify=False):
         """
-        :rtype:  Returns an array object. If reify is True,
-            it will replace any dimension within the array shape with
-            the extent_size of the dimension.
+
+        .. code-block:: python
+
+            cube.register("uvw", ("ntime", "na", 3), np.float64)
+
+            cube.array("uvw", reify=False)["shape"]] == ("ntime", "na", 3)
+            cube.array("uvw", reify=True)["shape"]] == (100, 7, 3)
+
+
+        Parameters
+        ----------
+        name : str
+            Array name
+        reify : bool
+             If True, converts abstract array schemas into
+            concrete shapes.
+
+        Returns
+        -------
+        dict
+            An array dictionary
+
         """
 
         try:
@@ -530,10 +604,16 @@ class HyperCube(object):
         """
         Return a dictionary of :class:`~hypercube.dims.Dimension` objects.
 
-        :param copy: Returns a copy of the dimension dictionary if True
-        :type copy: boolean:
+        Parameters
+        ----------
+        copy : boolean:
+            Returns a copy of the dimension dictionary if True (Default value = True)
 
-        :rtype: Returns the dimension dictionary
+        Returns
+        -------
+        dict
+            Dictionary of :class:`~hypercube.dims.Dimension` objects.
+
         """
 
         return self._dims.copy() if copy else self._dims
@@ -542,12 +622,17 @@ class HyperCube(object):
         """
         Returns the requested :class:`~hypercube.dims.Dimension` object
 
-        :param name: Name of the :class:`~hypercube.dims.Dimension` object
-        :type name: str
-        :param copy: Returns a copy of the :class:`~hypercube.dims.Dimension` object if True
-        :type copy: boolean
+        Parameters
+        ----------
+        name : str
+            Name of the :class:`~hypercube.dims.Dimension` object
+        copy : boolean
+            Returns a copy of the :class:`~hypercube.dims.Dimension` object if True (Default value = True)
 
-        :rtype: :class:`~hypercube.dims.Dimension` object.
+        Returns
+        -------
+        :class:`~hypercube.dims.Dimension`
+            A :class:`~hypercube.dims.Dimension` object.
         """
 
         try:
@@ -662,10 +747,18 @@ class HyperCube(object):
                 print 'Time range [{ts},{te}] Channel Range [{cs},{ce}]'.format(
                     ts=ts, te=te, cs=cs, ce=ce)
 
-        :param dim_strides: list of (dimension, stride) tuples
-        :type dim_strides: list
+        Parameters
+        ----------
+        *dim_strides : list
+            list of (dimension, stride) tuples
 
-        :rtype: An iterator
+
+        Returns
+        -------
+        iterator
+            An iterator producing lists of lower and upper extent tuples
+            :code:`[(d0_low, d0_high), (d1_low, d1_high), ..., (dn_low, dn_high)]`
+
         """
 
         def _dim_endpoints(size, stride):
@@ -697,10 +790,17 @@ class HyperCube(object):
             for i cube.endpoint_iter(('ntime', 10), ('nchan', 4))
                 A[i].sum()
 
-        :param dim_strides: list of (dimension, stride) tuples
-        :type dim_strides: list
+        Parameters
+        ----------
+        *dim_strides : list
+            list of (dimension, stride) tuples
 
-        :rtype: An iterator
+        Returns
+        -------
+        iterator
+            Iterator producing a tuple of slices for each dimension
+            :code:`(slice(d0_low, d0_high, 1), slice(d1_low, d1_high,1))`
+
         """
         def _create_slices(*args):
             return tuple(slice(s,e,1) for (s, e) in args)
@@ -723,10 +823,17 @@ class HyperCube(object):
             for d in cube.dim_iter(('ntime', 10), ('nchan', 4))
                 cube.update_dimensions(d)
 
-        :param dim_strides: list of (dimension, stride) tuples
-        :type dim_strides: list
+        Parameters
+        ----------
+        *dim_stride: list
+            list of (dimension, stride) tuples
 
-        :rtype: An iterator
+
+        Returns
+        -------
+        iterator
+            Iterator produces dictionaries describing dimensions updates.
+            :code:`{'name':'ntime', 'lower_extent': 100, 'upper_extent': 200 }`
         """
 
         # Extract dimension names
@@ -743,8 +850,7 @@ class HyperCube(object):
             in self.endpoint_iter(*dim_strides, **kwargs))
 
     def cube_iter(self, *dim_strides, **kwargs):
-        """
-        Recursively iterate over the (dimension, stride)
+        """Recursively iterate over the (dimension, stride)
         tuples specified in dim_strides, returning cloned hypercubes
         with each of the specified dimensions modified accordingly.
 
@@ -756,10 +862,17 @@ class HyperCube(object):
             for c in cube.cube_iter(('ntime', 10), ('nchan', 4))
                 assert c.dim_extent_size('ntime', 'nchan') == (10, 4)
 
-        :param dim_strides: list of (dimension, stride) tuples
-        :type dim_strides: list
+        Parameters
+        ----------
+        *dim_strides : list
+            list of (dimension, stride) tuples
 
-        :rtype: An iterator
+
+        Returns
+        -------
+            iterator
+                Iterator producing hypercubes
+
         """
 
         def _make_cube(dims, arrays, *args):
@@ -795,12 +908,25 @@ class HyperCube(object):
         Return a list of lower and upper extents for
         the given array_name.
 
-        :param array_name: Name of an array registered on this hypercube
-        :type array_name: string
+        .. code-block:: python
+
+            cube.register("uvw", ("ntime", "na", 3), np.float64)
+
+            (lt, ut), (la, ua), (_, _) = cube.array_extents("uvw")
+
+        Parameters
+        ----------
+        array_name : string
+            Name of an array registered on this hypercube
 
 
-        :rtype: A list of (lower_extent, upper_extent) tuples
-            associated with each dimension
+        Returns
+        -------
+        list
+            List of (lower_extent, upper_extent) tuples
+            associated with each array dimension
+
+
         """
 
         A = self.array(array_name, reify=False)
@@ -812,10 +938,26 @@ class HyperCube(object):
         slice(lower_extent, upper_extent, 1) of the dimensions
         of array_name.
 
-        :param array_name: Name of the array on this cube to slice
-        :type array_name: str
+        .. code-block:: python
 
-        :rtype: A tuple of slice(lower,upper,1) objects
+            cube.register("uvw", ("ntime", "na", 3), np.float64)
+
+            idx = cube.array_slice_index("uvw")
+            uvw[idx].sum()
+            ntime, na, components = cube.array_slice_index("uvw")
+            A[ntime, na, components].sum()
+
+
+        Parameters
+        ----------
+        array_name : str
+            Name of the array on this cube to slice
+
+        Returns
+        -------
+            tuple
+                Tuple of :code:`slice(lower,upper,1)` objects
+
         """
 
         A = self.array(array_name, reify=False)
@@ -826,7 +968,9 @@ class HyperCube(object):
         Returns a tuple of slices, each slice equal to the
         slice(lower_extent, upper_extent, 1) of the dimensions
         supplied in slice_dims. If the dimension is integer d,
-        slice(0, d, 1) will be used instead of the lower and upper extents::
+        slice(0, d, 1) will be used instead of the lower and upper extents
+
+        .. code-block:: python
 
             A = np.ones(ntime, na)
             idx = cube.slice_index('ntime','na', 3)
@@ -834,11 +978,18 @@ class HyperCube(object):
             ntime, na, components = cube.slice_index('ntime', 'na', 3)
             A[ntime, na, components].sum()
 
-        :type dims: list
-        :param dims: list of dimensions which should have slice
-                        objects returned.
+        Parameters
+        ----------
+        *slice_dims : tuple
+            Tuple of dimensions for which slice
+            objects should be returned.
 
-        :rtype: A tuple containing slices for each dimension in dims
+
+        Returns
+        -------
+            tuple
+                Tuple of :code:`slice(lower,upper,1)` objects
+
         """
         return tuple(slice(l, u, 1) for l, u in zip(
             self.dim_lower_extent(*slice_dims, single=False),

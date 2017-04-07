@@ -31,6 +31,7 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode']
@@ -163,3 +164,6 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 
 add_module_names = False
+
+napoleon_numpy_docstring=True
+napoleon_google_docstring=False

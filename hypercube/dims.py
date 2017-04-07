@@ -21,6 +21,41 @@
 DEFAULT_DESCRIPTION = 'The FOURTH dimension!'
 
 def create_dimension(name, dim_data, **kwargs):
+    """
+
+    Parameters
+    ----------
+    name : str
+        Dimension name
+
+    dim_data : int or :class:`~hypercube.dims.Dimension`
+        if an integer, this will be used to
+        define the global_size of the dimension
+        and possibly other attributes if they are
+        not present in kwargs.
+        If a Dimension, it will be updated with
+        any appropriate keyword arguments
+    
+    Keywords
+    --------
+    description : str
+        The description for this dimension.
+        e.g. 'Number of timesteps'.
+    lower_extent : int
+        The lower extent of this dimension
+        within the global space
+    upper_extent : int
+        The upper extent of this dimension
+        within the global space
+        
+
+    Returns
+    -------
+    :class:`~hypercube.dims.Dimension`
+        A hypercube :class:`~hypercube.dims.Dimension`
+
+
+    """
     if isinstance(dim_data, Dimension):
         dim = dim_data.copy()
         dim.update(**kwargs)
@@ -63,7 +98,11 @@ class Dimension(object):
                                     else description)
 
     def copy(self):
-        """ :rtype: A copy of the dimension """
+        """
+        Returns
+        -------
+            A copy of the dimension
+        """
         return Dimension(self._name, self._global_size,
             lower_extent=self._lower_extent,
             upper_extent=self._upper_extent,
@@ -81,7 +120,7 @@ class Dimension(object):
 
     @property
     def lower_extent(self):
-        """ Lower dimension extent """
+        """Lower dimension extent"""
         return self._lower_extent
 
     @property
@@ -117,15 +156,16 @@ class Dimension(object):
         """
         Update the dimension properties
 
-        :param global_size: Global dimension size
-        :type global_size: int
-        :param local_extent: Lower dimension extent
-        :type local_extent: int
-        :param upper_extent: Upper dimension extent
-        :type upper_extent: int
-        :param description: Dimension description
-        :type description: str
-
+        Parameters
+        ----------
+        global_size : int
+            Global dimension size (Default value = None)
+        lower_extent : int
+            Lower dimension extent (Default value = None)
+        upper_extent : int
+            Upper dimension extent (Default value = None)
+        description : str
+            Dimension description (Default value = None)
         """
 
         if global_size is not None: self._global_size = global_size
