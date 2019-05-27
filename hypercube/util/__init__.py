@@ -53,10 +53,10 @@ def reify_arrays(arrays, dims, copy=True):
     Reify arrays, given the supplied dimensions. If copy is True,
     returns a copy of arrays else performs this inplace.
     """
-    arrays = ({ k : AttrDict(**a) for k, a in arrays.iteritems() }
+    arrays = ({ k : AttrDict(**a) for k, a in arrays.items() }
         if copy else arrays)
 
-    for n, a in arrays.iteritems():
+    for n, a in arrays.items():
         a.shape = tuple(dims[v].extent_size if isinstance(v, str) else v
             for v in a.shape)
 

@@ -87,7 +87,7 @@ class HyperCube(object):
             on the cube, taking their extents into account.
         """
         return np.sum([hcu.array_bytes(a) for a
-            in self.arrays(reify=True).itervalues()])
+            in self.arrays(reify=True).values()])
 
     def mem_required(self):
         """
@@ -171,7 +171,7 @@ class HyperCube(object):
         """
 
         if isinstance(dims, collections.Mapping):
-            dims = dims.itervalues()
+            dims = iter(dims.values())
 
         for dim in dims:
             self.register_dimension(dim.name, dim)
@@ -196,7 +196,7 @@ class HyperCube(object):
         """
 
         if isinstance(dims, collections.Mapping):
-            dims = dims.itervalues()
+            dims = iter(dims.values())
 
         for dim in dims:
             # Defer to update dimension for dictionaries
@@ -269,15 +269,15 @@ class HyperCube(object):
 
     def dim_global_size_dict(self):
         """ Returns a mapping of dimension name to global size """
-        return { d.name: d.global_size for d in self._dims.itervalues()}
+        return { d.name: d.global_size for d in self._dims.values()}
 
     def dim_lower_extent_dict(self):
         """ Returns a mapping of dimension name to lower_extent """
-        return { d.name: d.lower_extent for d in self._dims.itervalues()}
+        return { d.name: d.lower_extent for d in self._dims.values()}
 
     def dim_upper_extent_dict(self):
         """ Returns a mapping of dimension name to upper_extent """
-        return { d.name: d.upper_extent for d in self._dims.itervalues()}
+        return { d.name: d.upper_extent for d in self._dims.values()}
 
     def dim_global_size(self, *args, **kwargs):
         """
@@ -355,7 +355,7 @@ class HyperCube(object):
 
         # Handle sequence and singles differently
         if isinstance(l, collections.Sequence):
-            return zip(l, u)
+            return list(zip(l, u))
         else:
             return (l, u)
 
@@ -431,7 +431,7 @@ class HyperCube(object):
         """
 
         if isinstance(arrays, collections.Mapping):
-            arrays = arrays.itervalues()
+            arrays = iter(arrays.values())
 
         for ary in arrays:
             self.register_array(**ary)
@@ -462,7 +462,7 @@ class HyperCube(object):
             dtype=dtype, default=default)
 
         #if not hasattr(HyperCube, name):
-        if not HyperCube.__dict__.has_key(name):
+        if name not in HyperCube.__dict__:
                 # Create the descriptor for this property on the class instance
             setattr(HyperCube, name, PropertyDescriptor(record_key=name, default=default))
 
@@ -474,7 +474,7 @@ class HyperCube(object):
         setter_name = hcu.setter_name(name)
 
         # Yes, create a default setter
-        if isinstance(setter, types.BooleanType) and setter is True:
+        if isinstance(setter, bool) and setter is True:
             def set(self, value):
                 setattr(self,name,value)
 
@@ -491,7 +491,7 @@ class HyperCube(object):
         elif isinstance(setter, types.MethodType):
             setattr(self, setter_name, setter)
         else:
-            raise TypeError, ('setter keyword argument set',
+            raise TypeError('setter keyword argument set',
                 ' to an invalid type %s' % (type(setter)))
 
         return P
@@ -517,7 +517,7 @@ class HyperCube(object):
 
         """
         if isinstance(properties, collections.Mapping):
-            properties = properties.itervalues()
+            properties = iter(properties.values())
 
         for prop in properties:
             self.register_property(**prop)
@@ -545,7 +545,7 @@ class HyperCube(object):
             return self._properties[name]
         except KeyError:
             raise KeyError("Property '{n}' is not registered "
-                "on this cube".format(n=name)), None, sys.exc_info()[2]
+                "on this cube".format(n=name))
 
     def arrays(self, reify=False):
         """
@@ -598,7 +598,7 @@ class HyperCube(object):
                     self.dimensions(copy=False))[name])
         except KeyError:
             raise KeyError("Array '{n}' is not registered on this cube"
-                .format(n=name)), None, sys.exc_info()[2]
+                .format(n=name))
 
     def dimensions(self, copy=True):
         """
@@ -639,7 +639,7 @@ class HyperCube(object):
             return create_dimension(name, self._dims[name]) if copy else self._dims[name]
         except KeyError:
             raise KeyError("Dimension '{n}' is not registered "
-                "on this cube".format(n=name)), None, sys.exc_info()[2]
+                "on this cube".format(n=name))
 
     def copy(self):
         """ :rtype: Return a copy of the hypercube """
@@ -657,7 +657,7 @@ class HyperCube(object):
             'Global Size', 'Extents']
 
         table = []
-        for dimval in sorted(self.dimensions(copy=False).itervalues(),
+        for dimval in sorted(iter(self.dimensions(copy=False).values()),
                              key=lambda dval: dval.name.upper()):
 
             table.append([dimval.name,
@@ -678,7 +678,7 @@ class HyperCube(object):
         reified_arrays = self.arrays(reify=True)
 
         table = []
-        for array in sorted(self.arrays().itervalues(),
+        for array in sorted(iter(self.arrays().values()),
                              key=lambda aval: aval.name.upper()):
             # Get the actual size of the array
             nbytes = hcu.array_bytes(reified_arrays[array.name])
@@ -699,7 +699,7 @@ class HyperCube(object):
         headers = ['Property Name', 'Type', 'Value', 'Default Value']
 
         table = []
-        for propval in sorted(self._properties.itervalues(),
+        for propval in sorted(iter(self._properties.values()),
                               key=lambda pval: pval.name.upper()):
             table.append([propval.name,
                 np.dtype(propval.dtype).name,
@@ -762,7 +762,7 @@ class HyperCube(object):
         """
 
         def _dim_endpoints(size, stride):
-            r = xrange(0, size, stride) if stride > 0 else xrange(0, size)
+            r = range(0, size, stride) if stride > 0 else range(0, size)
             return ((i, min(i+stride, size)) for i in r)
 
         dims = self.dimensions(copy=False)
@@ -846,7 +846,7 @@ class HyperCube(object):
                 } for (d, (s, e)) in args)
 
         # Return a tuple-dict-creating generator
-        return (_create_dim_dicts(*zip(dims, s)) for s
+        return (_create_dim_dicts(*list(zip(dims, s))) for s
             in self.endpoint_iter(*dim_strides, **kwargs))
 
     def cube_iter(self, *dim_strides, **kwargs):
@@ -900,7 +900,7 @@ class HyperCube(object):
             if kwargs.get('arrays', False) else {})
 
         # Return a cube-creating generator
-        return (_make_cube(self.dimensions(), arrays, *zip(dim_names, s))
+        return (_make_cube(self.dimensions(), arrays, *list(zip(dim_names, s)))
             for s in self.endpoint_iter(*dim_strides, **kwargs))
 
     def array_extents(self, array_name, **kwargs):

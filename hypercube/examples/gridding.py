@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
+
 
 import sys
 
@@ -71,8 +71,8 @@ print (cube)
 np_cube = hc.HyperCube()
 
 # Register dimension and array information from the original hypercube
-np_cube.register_dimensions(cube.dimensions().itervalues())
-np_cube.register_arrays(cube.arrays().itervalues())
+np_cube.register_dimensions(iter(cube.dimensions().values()))
+np_cube.register_arrays(iter(cube.arrays().values()))
 hc.create_local_numpy_arrays_on_cube(np_cube)
 
 # Get some dimension information to check our numpy shape size
@@ -93,8 +93,8 @@ try:
     cuda_cube = hc.HyperCube()
 
     # Register dimension and array information from the original hypercube
-    cuda_cube.register_dimensions(cube.dimensions().itervalues())
-    cuda_cube.register_arrays(cube.arrays().itervalues())
+    cuda_cube.register_dimensions(iter(cube.dimensions().values()))
+    cuda_cube.register_arrays(iter(cube.arrays().values()))
 
     # Reduce local number of facets to 1 and handle [0,1]
     cuda_cube.update_dimension(name='nfacet',
@@ -106,5 +106,5 @@ try:
 except:
     raise ValueError("PyCUDA not installed or not "
         "enough GPU memory to hold {b}"
-            .format(b=np_cube.mem_required())), None, sys.exc_info()[2]
+            .format(b=np_cube.mem_required())).with_traceback(sys.exc_info()[2])
 

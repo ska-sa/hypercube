@@ -186,7 +186,7 @@ class Test(unittest.TestCase):
         arrays = hc.create_local_arrays(cube.arrays(reify=True))
 
         # Check that we get numpy arrays by default
-        for a in arrays.itervalues():
+        for a in arrays.values():
             self.assertTrue(isinstance(a, np.ndarray))
 
         # Check that the shape is correct
@@ -203,7 +203,7 @@ class Test(unittest.TestCase):
         arrays = hc.create_local_numpy_arrays_on_cube(cube)
 
         # Check that we get numpy arrays by default
-        for a in arrays.itervalues():
+        for a in arrays.values():
             self.assertTrue(isinstance(a, np.ndarray))
 
         # Check that the shape is correct
@@ -366,13 +366,13 @@ class Test(unittest.TestCase):
 
         # Test that arrays aren't copied over by default
         for c in cube.cube_iter(('ntime', tsize), ('na', asize)):
-            self.assertTrue('uvw' not in c.arrays().keys())
+            self.assertTrue('uvw' not in list(c.arrays().keys()))
             break
 
         # Test that arrays aren't copied over when requested
         for c in cube.cube_iter(('ntime', tsize), ('na', asize),
             arrays=True):
-            self.assertTrue('uvw' in c.arrays().keys())
+            self.assertTrue('uvw' in list(c.arrays().keys()))
             break
 
         # Test that iterating over dimension dictionaries works
@@ -440,9 +440,9 @@ class Test(unittest.TestCase):
 
         # Test registraion by list
         lcube = hc.HyperCube()
-        lcube.register_dimensions(D.itervalues())
-        lcube.register_arrays(A.itervalues())
-        lcube.register_properties(P.itervalues())
+        lcube.register_dimensions(iter(D.values()))
+        lcube.register_arrays(iter(A.values()))
+        lcube.register_properties(iter(P.values()))
 
         # The two should agree
         self.assertTrue(dcube.dimensions() == lcube.dimensions())
