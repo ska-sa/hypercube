@@ -762,6 +762,8 @@ class HyperCube(object):
         """
 
         def _dim_endpoints(size, stride):
+            size = int(size)
+            stride = int(stride)
             r = range(0, size, stride) if stride > 0 else range(0, size)
             return ((i, min(i+stride, size)) for i in r)
 
