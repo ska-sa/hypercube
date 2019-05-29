@@ -49,7 +49,7 @@ def generic_stitch(cube, arrays):
     then sets the array as a member variable
     """
     
-    for name, ary in arrays.iteritems():
+    for name, ary in arrays.items():
         if name not in type(cube).__dict__:
             setattr(type(cube), name, ArrayDescriptor(name))
 
@@ -88,7 +88,7 @@ def create_local_arrays(reified_arrays, array_factory=None):
     # Construct the array dictionary by calling the
     # array_factory for each array
     return { n: array_factory(ra.shape, ra.dtype)
-        for n, ra in reified_arrays.iteritems() }
+        for n, ra in reified_arrays.items() }
     
 def create_local_arrays_on_cube(cube, reified_arrays=None, array_stitch=None, array_factory=None):
     """

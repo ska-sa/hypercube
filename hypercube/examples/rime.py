@@ -49,20 +49,20 @@ cube.register_array('uvw', ('ntime', 'nbl', 3), dtype=np.complex128)
 # This is like a 3 level for loop
 iter_dims = ('ntime', 'nbl', 'nchan')
 iter_strides = (100, 24, 64)
-iter_args = zip(iter_dims, iter_strides)
+iter_args = list(zip(iter_dims, iter_strides))
 
 # Do the iteration, updating the cube with extent
 # and chunk size information
 for i, d in enumerate(cube.dim_iter(*iter_args)):
     cube.update_dimensions(d)
-    print 'extents', zip(iter_dims, cube.dim_extents(*iter_dims))
+    print('extents', list(zip(iter_dims, cube.dim_extents(*iter_dims))))
     # Query the time dimension
-    print 'ntime dimension', cube.dimension('ntime')
+    print('ntime dimension', cube.dimension('ntime'))
     # Query the shape of the visibilities array.
     # First version gives the abstract shape (defined above)
     # Second reifies it with dimension information
-    print 'abstract visibilities shape', cube.array('visibilities').shape
-    print 'reified visibilities shape', cube.array('visibilities', reify=True).shape
+    print('abstract visibilities shape', cube.array('visibilities').shape)
+    print('reified visibilities shape', cube.array('visibilities', reify=True).shape)
 
     # Expanded version of cube.dim_extents
     #print zip(iter_dims, cube.dim_lower_extent(*iter_dims))
@@ -74,4 +74,4 @@ for i, d in enumerate(cube.dim_iter(*iter_args)):
     #print zip(iter_dims, cube.dim_global_size(*iter_dims))
 
 
-print cube
+print(cube)
