@@ -104,7 +104,7 @@ class Test(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             cube.update_dimension(name='ntime', global_size=80)
 
-        self.assertTrue("Dimension '{}' fails".format('ntime') in cm.exception.message)
+        self.assertTrue("Dimension '{}' fails".format('ntime') in "".join(cm.exception.args))
 
         # This should succeed
         cube.update_dimension(name='ntime', global_size=80, upper_extent=80)
