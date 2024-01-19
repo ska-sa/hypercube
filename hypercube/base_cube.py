@@ -25,7 +25,7 @@ import types
 from weakref import WeakKeyDictionary
 
 import numpy as np
-from attrdict import AttrDict
+import attridict as AttrDict
 from tabulate import tabulate
 
 from hypercube.dims import create_dimension, Dimension
