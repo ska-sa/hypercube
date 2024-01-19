@@ -11,7 +11,7 @@ on:
 
 jobs:
    check_skip:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     if: |
       !contains(format('{0} {1} {2}', github.event.head_commit.message, github.event.pull_request.title, github.event.pull_request.body), '[skip ci]')
     steps:
@@ -39,7 +39,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install nose #pynose # replacement for nose
+        python -m pip install nose # replacement for nose
         if [ -f requirements.txt ]; then 
           pip install -r requirements.txt; 
         else
@@ -47,4 +47,4 @@ jobs:
         fi
     - name: Test
       run: |
-        pynose .
+        nose .
