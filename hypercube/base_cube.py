@@ -19,13 +19,16 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import collections.abc
+
+
 import itertools
 import sys
 import types
 from weakref import WeakKeyDictionary
 
 import numpy as np
-from attrdict import AttrDict
+import attridict as AttrDict
 from tabulate import tabulate
 
 from hypercube.dims import create_dimension, Dimension
@@ -170,7 +173,7 @@ class HyperCube(object):
 
         """
 
-        if isinstance(dims, collections.Mapping):
+        if isinstance(dims, collections.abc.Mapping):
             dims = iter(dims.values())
 
         for dim in dims:
@@ -195,7 +198,7 @@ class HyperCube(object):
             A list or dictionary of dimension updates
         """
 
-        if isinstance(dims, collections.Mapping):
+        if isinstance(dims, collections.abc.Mapping):
             dims = iter(dims.values())
 
         for dim in dims:
@@ -354,7 +357,7 @@ class HyperCube(object):
         u = self.dim_upper_extent(*args, **kwargs)
 
         # Handle sequence and singles differently
-        if isinstance(l, collections.Sequence):
+        if isinstance(l, collections.abc.Sequence):
             return list(zip(l, u))
         else:
             return (l, u)
@@ -430,7 +433,7 @@ class HyperCube(object):
             A list or dictionary of dictionaries describing arrays.
         """
 
-        if isinstance(arrays, collections.Mapping):
+        if isinstance(arrays, collections.abc.Mapping):
             arrays = iter(arrays.values())
 
         for ary in arrays:
@@ -516,7 +519,7 @@ class HyperCube(object):
             describing properties
 
         """
-        if isinstance(properties, collections.Mapping):
+        if isinstance(properties, collections.abc.Mapping):
             properties = iter(properties.values())
 
         for prop in properties:
