@@ -79,4 +79,5 @@ setup(name='hypercube',
         'six >= 1.10.0',
         'tabulate >= 0.7.5',
     ],
+    python_requires='>=3.0',
     zip_safe=True)
