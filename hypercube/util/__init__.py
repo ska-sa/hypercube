@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-from attrdict import AttrDict
+import attridict as AttrDict
 import numpy as np
 
 from hypercube.dims import Dimension
