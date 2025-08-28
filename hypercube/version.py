@@ -1,3 +1,2 @@
-import pkg_resources
-
-__version__ = pkg_resources.get_distribution("hypercube").version
+from importlib.metadata import version
+__version__ = version("hypercube")
