@@ -6,6 +6,7 @@ name: Python package
 on:
   push:
   pull_request:
+    branches: ["**"]
   schedule:
     - cron: '30 2 * * 1' # Every Monday @ 2h30am UTC
 
