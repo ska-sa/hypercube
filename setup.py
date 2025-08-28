@@ -29,7 +29,7 @@ def readme():
         return f.read()
 
 setup(name='hypercube',
-    version='0.3.5',
+    version='0.3.6',
     description='Actually an n-orthotope.',
     long_description=readme(),
     url='http://github.com/ska-sa/hypercube',

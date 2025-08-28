@@ -25,7 +25,7 @@ from hypercube.dims import Dimension
 
 def array_bytes(array):
     """ Estimates the memory of the supplied array in bytes """
-    return np.product(array.shape)*np.dtype(array.dtype).itemsize
+    return np.prod(array.shape)*np.dtype(array.dtype).itemsize
 
 def fmt_bytes(nbytes):
     """ Returns a human readable string, given the number of bytes """
